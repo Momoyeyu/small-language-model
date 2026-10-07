@@ -51,7 +51,7 @@
           <span class="section-number">01</span>
           <div><h2 id="overview-title">总览：单一实现，三条消费路径</h2><p class="section-lead">核心不复制，实验不隐藏，教材可复现。</p></div>
         </div>
-        <p><code>slm/</code> 是规范实现。外部代码统一使用 <code>from slm import ...</code>；旧的 <code>model/</code>、<code>envs/</code>、<code>utils/</code> 只是兼容 re-export，不含第二份算法。修改核心会影响脚本、训练器、测试与所有 Notebook。</p>
+        <p><code>slm/</code> 是唯一核心实现。外部代码统一使用 <code>from slm import ...</code>；脚本、训练器、测试与 Notebook 共用这一套 API。</p>
         <div class="diagram" role="group" aria-label="三条架构通道：核心、运行消费者、生成教材">
           <div class="diagram-header"><span class="diagram-title">THREE-LANE SYSTEM</span><span class="diagram-caption">single source → orchestration → executable teaching</span></div>
           <div class="lane-grid">
@@ -66,7 +66,6 @@
           </div>
           <p class="diagram-text"><strong>文字等价说明：</strong>运行消费者直接导入公共 facade；Notebook 生成器同时读取核心、编号脚本和显式教学清单，并不从 import 顺序猜测教学顺序。文章与 Notebook 足以学习实现，本架构页补充贡献边界。</p>
         </div>
-        <div class="callout blue">迁移前 PPO checkpoint 的 <code>state_dict</code> 格式没有因为纯模块迁移改变；兼容 facade 只保证导入路径，不应成为新教学源码链接。</div>
       </section>
 
       <section class="section-panel" id="modules" aria-labelledby="modules-title">

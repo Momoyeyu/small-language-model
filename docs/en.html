@@ -51,7 +51,7 @@
           <span class="section-number">01</span>
           <div><h2 id="overview-title">Overview: one implementation, three consumption lanes</h2><p class="section-lead">No duplicated core, no hidden experiments, reproducible teaching artifacts.</p></div>
         </div>
-        <p><code>slm/</code> is canonical. External code uses <code>from slm import ...</code>. Legacy <code>model/</code>, <code>envs/</code>, and <code>utils/</code> packages are compatibility re-exports, not second implementations. A core change reaches scripts, trainers, tests, and every notebook.</p>
+        <p><code>slm/</code> is the single core implementation. Scripts, trainers, tests, and notebooks share its public API through <code>from slm import ...</code>.</p>
         <div class="diagram" role="group" aria-label="Three architecture lanes: core, runtime consumers, and generated teaching">
           <div class="diagram-header"><span class="diagram-title">THREE-LANE SYSTEM</span><span class="diagram-caption">single source → orchestration → executable teaching</span></div>
           <div class="lane-grid">
@@ -66,7 +66,6 @@
           </div>
           <p class="diagram-text"><strong>Text equivalent:</strong> runtime consumers import the public facade directly. Notebook generation reads the core, numbered scripts, and an explicit teaching manifest; it never infers teaching order from imports. Articles plus notebooks are sufficient for learning, while this architecture page adds contributor boundaries.</p>
         </div>
-        <div class="callout blue">PPO checkpoint <code>state_dict</code> formats did not change during the pure module migration. Compatibility facades preserve import paths, but new teaching links should point to canonical source.</div>
       </section>
 
       <section class="section-panel" id="modules" aria-labelledby="modules-title">

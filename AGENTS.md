@@ -24,3 +24,4 @@
 - Do not add external runtime dependencies, CDNs, remote fonts, generated frameworks, machine paths, hostnames, or credentials to the docs. Do not claim deployment until remote status and URL are verified.
 - Validate links, fragments, assets, language parity, and declared core import edges with `make check-docs`.
 - Preview locally with `make docs`. GitHub Pages publishing is branch-based from `master/docs`; repository settings and the actual deployment remain maintainer-owned.
+- Keep one current implementation under `slm/`; do not add legacy import wrappers or migration-history sections to reader-facing docs.
