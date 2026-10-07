@@ -24,7 +24,7 @@
 
 </div>
 
-* To be clear up front: there is **no** model called small-language-model here. "Small" means taking the core techniques of large language models and cutting them **small** — small enough that a file reads in one sitting, a script runs in seconds, and every claim is checked by a test.
+* To be clear up front: there is **no** model called small-language-model here. "Small" means taking the core techniques of large language models and cutting them **small** — small enough that a file can be read in one go, a script can be run end to end, and a claim can be verified by a single test.
 * Each module covers one LLM technique, implemented from scratch in plain **PyTorch**, without the high-level wrappers of Gym, TRL, Transformers, or similar frameworks.
 * Each module ships with a long-form article (in Chinese) whose formulas and variable names map one-to-one onto the code: every section has a runnable script, every claim has a test.
 * Everything runs on CPU, and most experiments finish in minutes on an ordinary laptop.
@@ -69,6 +69,8 @@ uv pip install -r requirements.txt
 
 # Option 2: pip
 pip install -r requirements.txt
+
+# In mainland China, add a mirror: --index-url https://mirrors.aliyun.com/pypi/simple
 ```
 
 ```bash

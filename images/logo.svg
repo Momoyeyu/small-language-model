@@ -1,29 +1,41 @@
-<svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="small-language-model logo: three stacked blocks forming a tiny transformer layer inside a rounded badge, next to the words small-language-model">
+<svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="small-language-model logo: a magnifying glass enlarging a tiny transformer block, next to the words language model with a deliberately tiny word small in front">
 	<defs>
 		<linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
 			<stop offset="0" stop-color="#5b8def"/>
 			<stop offset="1" stop-color="#8b5cf6"/>
 		</linearGradient>
+		<clipPath id="lens">
+			<circle cx="92" cy="92" r="52"/>
+		</clipPath>
 	</defs>
 	<style>
-		.word { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; font-size: 52px; fill: #2b2b2b; }
+		.small { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; font-size: 17px; fill: #8b5cf6; }
+		.word { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 700; font-size: 56px; fill: #2b2b2b; }
 		.sub { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 20px; fill: #6b7684; }
+		.lens-bg { fill: #f3f0ff; }
 		@media (prefers-color-scheme: dark) {
+			.small { fill: #a78bfa; }
 			.word { fill: #e6e6e6; }
 			.sub { fill: #9aa5b1; }
+			.lens-bg { fill: #1f1b2e; }
 		}
 	</style>
 
-	<!-- badge -->
-	<rect x="30" y="30" width="140" height="140" rx="32" fill="url(#g)"/>
-	<!-- residual stream -->
-	<path d="M100,150 L100,50" stroke="#ffffff" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
-	<!-- stacked blocks: norm / attention / ffn -->
-	<rect x="62" y="122" width="76" height="16" rx="6" fill="#ffffff" opacity="0.75"/>
-	<rect x="56" y="92" width="88" height="22" rx="7" fill="#ffffff"/>
-	<rect x="62" y="68" width="76" height="16" rx="6" fill="#ffffff" opacity="0.75"/>
-	<circle cx="100" cy="50" r="9" fill="#ffd166"/>
+	<!-- magnifying glass -->
+	<path d="M131,131 L172,172" stroke="url(#g)" stroke-width="16" stroke-linecap="round"/>
+	<circle cx="92" cy="92" r="52" class="lens-bg"/>
+	<!-- magnified tiny transformer block -->
+	<g clip-path="url(#lens)">
+		<path d="M92,150 L92,34" stroke="#8b5cf6" stroke-width="4" stroke-linecap="round" opacity="0.45"/>
+		<rect x="62" y="116" width="60" height="13" rx="5" fill="#5b8def" opacity="0.7"/>
+		<rect x="56" y="86" width="72" height="20" rx="6" fill="url(#g)"/>
+		<rect x="62" y="63" width="60" height="13" rx="5" fill="#8b5cf6" opacity="0.7"/>
+		<circle cx="92" cy="52" r="6" fill="#ffd166"/>
+	</g>
+	<circle cx="92" cy="92" r="52" fill="none" stroke="url(#g)" stroke-width="10"/>
 
-	<text x="196" y="108" class="word">small-language-model</text>
-	<text x="199" y="146" class="sub">Not a model. LLM techniques, built from zero, line by line.</text>
+	<!-- wordmark: the word "small" is literally small -->
+	<text x="196" y="110" class="small">small</text>
+	<text x="246" y="110" class="word">language model</text>
+	<text x="198" y="150" class="sub">LLM techniques, cut small, built from zero.</text>
 </svg>
