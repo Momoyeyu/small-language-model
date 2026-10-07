@@ -38,15 +38,15 @@
 
 现代 LLM 由 Transformer、MoE、归一化、位置编码、RLHF 等技术堆叠而成。现成框架往往用几行接口隐藏了公式到张量操作的映射；本项目则沿推导链把每一步写成可运行、可检查、可复用的 PyTorch 代码。
 
-| 章节 | 配套文章 | 可执行 Notebook | 内容 |
-| --- | --- | --- | --- |
-| EP.0 Transformer | [Transformer 的数学表示与代码实现](https://momoyeyu.github.io/posts/llm-transformer/) | [00_transformer.ipynb](notebooks/00_transformer.ipynb) | Attention、MHA、FFN、mask、Encoder–Decoder |
-| EP.1 MoE | [MoE 技术原理](https://momoyeyu.github.io/posts/llm-moe/) | [01_moe.ipynb](notebooks/01_moe.ipynb) | Router、负载均衡、capacity、shared experts |
-| EP.2 归一化 | [一文搞懂归一化技术](https://momoyeyu.github.io/posts/llm-normalization/) | [02_normalization.ipynb](notebooks/02_normalization.ipynb) | BatchNorm、LayerNorm、RMSNorm、Pre/Post、QK-Norm |
-| EP.3 位置编码 | [位置编码技术的演进](https://momoyeyu.github.io/posts/llm-position-encoding/) | [03_position.ipynb](notebooks/03_position.ipynb) | Learned PE、相对 bias、ALiBi、RoPE、长度缩放 |
-| EP.4 PPO | [从零理解 PPO](https://momoyeyu.github.io/posts/llm-ppo/) | [04_ppo.ipynb](notebooks/04_ppo.ipynb) | MDP、GAE、PPO、短训练循环、玩具 RLHF |
+| 章节 | 内容 |
+| --- | --- |
+| **EP.0 Transformer**<br>[文章](https://momoyeyu.github.io/posts/llm-transformer/) · [Notebook](notebooks/00_transformer.ipynb) | 注意力与 Encoder–Decoder |
+| **EP.1 MoE**<br>[文章](https://momoyeyu.github.io/posts/llm-moe/) · [Notebook](notebooks/01_moe.ipynb) | 路由、负载均衡与共享专家 |
+| **EP.2 归一化**<br>[文章](https://momoyeyu.github.io/posts/llm-normalization/) · [Notebook](notebooks/02_normalization.ipynb) | Norm、残差与 QK 尺度 |
+| **EP.3 位置编码**<br>[文章](https://momoyeyu.github.io/posts/llm-position-encoding/) · [Notebook](notebooks/03_position.ipynb) | 相对位置、RoPE 与长度缩放 |
+| **EP.4 PPO**<br>[文章](https://momoyeyu.github.io/posts/llm-ppo/) · [Notebook](notebooks/04_ppo.ipynb) | 策略梯度、GAE 与 RLHF |
 
-贡献者可阅读本地静态架构文档：[中文版](docs/index.html) / [English](docs/en.html)。
+架构文档：[中文](https://momoyeyu.github.io/small-language-model/) / [English](https://momoyeyu.github.io/small-language-model/en.html)。
 
 # 📌 快速开始
 
@@ -73,8 +73,6 @@ uv pip install -r requirements-notebooks.txt
 make notebooks
 make check-notebooks
 ```
-
-`requirements.txt` 保持 `torch>=2.1`；RMSNorm 对拍在原生 `nn.RMSNorm` 不可用时使用公式参考，不要求提升依赖下限。
 
 # 📌 可执行 Notebook
 
@@ -237,9 +235,9 @@ $$
 
 </details>
 
-## Ⅲ 历史实验结果（迁移前）
+## Ⅲ 实验结果
 
-以下数字是仓库统一 `slm` 核心与 Notebook 生成器迁移前保存的历史运行，不是本次重构后的当前 CUDA 复跑结果。原记录环境为 Ubuntu 24.04、Python 3.12、PyTorch 2.x、NVIDIA GeForce RTX 4080 SUPER；CartPole 使用 CPU，玩具 RLHF 使用 CUDA。数字原样保留，便于复现时比较。
+实验环境：Ubuntu 24.04、Python 3.12、PyTorch 2.x、NVIDIA GeForce RTX 4080 SUPER。CartPole 使用 CPU，玩具 RLHF 使用 CUDA。
 
 **CartPole**（3 个随机种子：0 / 1 / 2）
 
@@ -249,7 +247,7 @@ $$
 | REINFORCE + 基线 | 1000 回合（32 万～33 万步） | 484 / 463 / 492 | — | 约 90 s |
 | PPO | 10 万步 | 448 / 500 / 500 | 2.9 万 / 3.7 万 / 4.0 万步 | 约 100 s |
 
-> REINFORCE 统计最后 100 个回合，PPO 统计最后 10 个回合。历史 PPO 权重用 `eval_cartpole.py --greedy` 评估时，3 个种子在 20 个回合中均坚持满 500 步。
+> REINFORCE 统计最后 100 个回合，PPO 统计最后 10 个回合。PPO 权重用 `eval_cartpole.py --greedy` 评估时，3 个种子在 20 个回合中均坚持满 500 步。
 
 ![learning-curves](./images/ppo/learning_curves.png)
 
@@ -273,27 +271,10 @@ small-language-model
 ├── tools/              # chapters.py 教学清单 + build_notebooks.py 生成器
 ├── trainer/            # REINFORCE、PPO、玩具 RLHF 完整训练 CLI
 ├── tests/              # 核心、科学断言与 Notebook 基础设施测试
-├── model/ envs/ utils/ # 兼容旧导入的薄 facade；不是教学实现来源
 ├── eval_cartpole.py
 ├── requirements.txt
 └── requirements-notebooks.txt
 ```
-
-# 📌 参考资料
-
-* [Transformer 的数学表示与代码实现](https://momoyeyu.github.io/posts/llm-transformer/)
-* [MoE 技术原理](https://momoyeyu.github.io/posts/llm-moe/)
-* [一文搞懂归一化技术](https://momoyeyu.github.io/posts/llm-normalization/)
-* [位置编码技术的演进](https://momoyeyu.github.io/posts/llm-position-encoding/)
-* [从零理解 PPO](https://momoyeyu.github.io/posts/llm-ppo/)
-* [Reinforcement Learning: An Introduction](http://incompleteideas.net/book/the-book-2nd.html)
-* [OpenAI Spinning Up in Deep RL](https://spinningup.openai.com/)
-* [High-Dimensional Continuous Control Using Generalized Advantage Estimation](https://arxiv.org/abs/1506.02438)
-* [Trust Region Policy Optimization](https://arxiv.org/abs/1502.05477)
-* [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347)
-* [The 37 Implementation Details of Proximal Policy Optimization](https://iclr-blog-track.github.io/2022/03/25/ppo-implementation-details/)
-* [Training Language Models to Follow Instructions with Human Feedback](https://arxiv.org/abs/2203.02155)
-* [MiniMind](https://github.com/jingyaogong/minimind)：本仓库的组织形式与 README 风格参考了这个项目
 
 # 📌 License
 

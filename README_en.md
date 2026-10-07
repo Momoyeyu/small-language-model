@@ -38,15 +38,15 @@
 
 Modern LLMs stack Transformers, MoE, normalization, positional encoding, RLHF, and many other techniques. Production frameworks often hide the path from formulas to tensor operations behind a few APIs; this project instead turns each derivation step into PyTorch code that can be run, inspected, tested, and reused.
 
-| Chapter | Companion article | Executable notebook | Contents |
-| --- | --- | --- | --- |
-| EP.0 Transformer | [Transformer 的数学表示与代码实现](https://momoyeyu.github.io/posts/llm-transformer/) | [00_transformer.ipynb](notebooks/00_transformer.ipynb) | Attention, MHA, FFN, masks, Encoder–Decoder |
-| EP.1 MoE | [MoE 技术原理](https://momoyeyu.github.io/posts/llm-moe/) | [01_moe.ipynb](notebooks/01_moe.ipynb) | Router, load balancing, capacity, shared experts |
-| EP.2 Normalization | [一文搞懂归一化技术](https://momoyeyu.github.io/posts/llm-normalization/) | [02_normalization.ipynb](notebooks/02_normalization.ipynb) | BatchNorm, LayerNorm, RMSNorm, Pre/Post, QK-Norm |
-| EP.3 Position | [位置编码技术的演进](https://momoyeyu.github.io/posts/llm-position-encoding/) | [03_position.ipynb](notebooks/03_position.ipynb) | Learned PE, relative bias, ALiBi, RoPE, length scaling |
-| EP.4 PPO | [从零理解 PPO](https://momoyeyu.github.io/posts/llm-ppo/) | [04_ppo.ipynb](notebooks/04_ppo.ipynb) | MDP, GAE, PPO, short training loops, toy RLHF |
+| Chapter | Contents |
+| --- | --- |
+| **EP.0 Transformer**<br>[Article](https://momoyeyu.github.io/posts/llm-transformer/) · [Notebook](notebooks/00_transformer.ipynb) | Attention and Encoder–Decoder |
+| **EP.1 MoE**<br>[Article](https://momoyeyu.github.io/posts/llm-moe/) · [Notebook](notebooks/01_moe.ipynb) | Routing, balancing, shared experts |
+| **EP.2 Normalization**<br>[Article](https://momoyeyu.github.io/posts/llm-normalization/) · [Notebook](notebooks/02_normalization.ipynb) | Norm, residuals, QK scale |
+| **EP.3 Position**<br>[Article](https://momoyeyu.github.io/posts/llm-position-encoding/) · [Notebook](notebooks/03_position.ipynb) | Relative position, RoPE, scaling |
+| **EP.4 PPO**<br>[Article](https://momoyeyu.github.io/posts/llm-ppo/) · [Notebook](notebooks/04_ppo.ipynb) | Policy gradients, GAE, RLHF |
 
-Contributors can open the local static architecture guide in [Chinese](docs/index.html) or [English](docs/en.html).
+Architecture guide: [Chinese](https://momoyeyu.github.io/small-language-model/) / [English](https://momoyeyu.github.io/small-language-model/en.html).
 
 # 📌 Quick Start
 
@@ -73,8 +73,6 @@ uv pip install -r requirements-notebooks.txt
 make notebooks
 make check-notebooks
 ```
-
-`requirements.txt` remains at `torch>=2.1`. RMSNorm comparisons use a formula reference when native `nn.RMSNorm` is unavailable, so the dependency floor does not need to move.
 
 # 📌 Executable Notebooks
 
@@ -237,9 +235,9 @@ In the toy RLHF setup, Actor and Critic share a GRU backbone, the reward model i
 
 </details>
 
-## Ⅲ Historical Results (Pre-Migration)
+## Ⅲ Results
 
-The numbers below are archived runs from before the unified `slm` core and notebook-generator migration. They are not a current CUDA rerun of this refactor. The original recorded environment was Ubuntu 24.04, Python 3.12, PyTorch 2.x, and NVIDIA GeForce RTX 4080 SUPER; CartPole used CPU and toy RLHF used CUDA. Values are preserved unchanged for reproduction comparisons.
+Experiment environment: Ubuntu 24.04, Python 3.12, PyTorch 2.x, and NVIDIA GeForce RTX 4080 SUPER. CartPole uses CPU; toy RLHF uses CUDA.
 
 **CartPole** (3 seeds: 0 / 1 / 2)
 
@@ -249,7 +247,7 @@ The numbers below are archived runs from before the unified `slm` core and noteb
 | REINFORCE + baseline | 1000 episodes (320k–330k steps) | 484 / 463 / 492 | — | ~90 s |
 | PPO | 100k steps | 448 / 500 / 500 | 29k / 37k / 40k steps | ~100 s |
 
-> REINFORCE averages the final 100 episodes; PPO averages the final 10. When the archived PPO weights were evaluated with `eval_cartpole.py --greedy`, all 3 seeds lasted the full 500 steps in each of 20 episodes.
+> REINFORCE averages the final 100 episodes; PPO averages the final 10. When the PPO weights were evaluated with `eval_cartpole.py --greedy`, all 3 seeds lasted the full 500 steps in each of 20 episodes.
 
 ![learning-curves](./images/ppo/learning_curves.png)
 
@@ -273,27 +271,10 @@ small-language-model
 ├── tools/              # chapters.py manifest + build_notebooks.py generator
 ├── trainer/            # full REINFORCE, PPO, and toy RLHF CLIs
 ├── tests/              # core, scientific assertion, and notebook infrastructure tests
-├── model/ envs/ utils/ # thin compatibility facades; not teaching implementation sources
 ├── eval_cartpole.py
 ├── requirements.txt
 └── requirements-notebooks.txt
 ```
-
-# 📌 References
-
-* [Transformer 的数学表示与代码实现](https://momoyeyu.github.io/posts/llm-transformer/)
-* [MoE 技术原理](https://momoyeyu.github.io/posts/llm-moe/)
-* [一文搞懂归一化技术](https://momoyeyu.github.io/posts/llm-normalization/)
-* [位置编码技术的演进](https://momoyeyu.github.io/posts/llm-position-encoding/)
-* [从零理解 PPO](https://momoyeyu.github.io/posts/llm-ppo/)
-* [Reinforcement Learning: An Introduction](http://incompleteideas.net/book/the-book-2nd.html)
-* [OpenAI Spinning Up in Deep RL](https://spinningup.openai.com/)
-* [High-Dimensional Continuous Control Using Generalized Advantage Estimation](https://arxiv.org/abs/1506.02438)
-* [Trust Region Policy Optimization](https://arxiv.org/abs/1502.05477)
-* [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347)
-* [The 37 Implementation Details of Proximal Policy Optimization](https://iclr-blog-track.github.io/2022/03/25/ppo-implementation-details/)
-* [Training Language Models to Follow Instructions with Human Feedback](https://arxiv.org/abs/2203.02155)
-* [MiniMind](https://github.com/jingyaogong/minimind): repository organization and README style were inspired by this project
 
 # 📌 License
 
