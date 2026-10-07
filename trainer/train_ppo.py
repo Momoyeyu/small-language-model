@@ -7,42 +7,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
-from envs import CartPole
-from model import ActorCritic
-from utils.common import get_device, save_run, set_seed
-from utils.rl_utils import compute_gae
-
-
-def ppo_loss(
-    model: ActorCritic,
-    obs: torch.Tensor,            # [B, obs_dim]
-    actions: torch.Tensor,        # [B]
-    old_log_probs: torch.Tensor,  # [B]
-    advantages: torch.Tensor,     # [B]
-    returns: torch.Tensor,        # [B]
-    clip_eps: float = 0.2,
-    vf_coef: float = 0.5,
-    ent_coef: float = 0.01,
-) -> tuple[torch.Tensor, dict[str, float]]:
-    dist, values = model(obs)
-    log_probs = dist.log_prob(actions)
-    ratio = torch.exp(log_probs - old_log_probs)
-
-    advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
-    surr1 = ratio * advantages
-    surr2 = torch.clamp(ratio, 1 - clip_eps, 1 + clip_eps) * advantages
-    policy_loss = -torch.min(surr1, surr2).mean()
-
-    value_loss = F.mse_loss(values, returns)
-    entropy = dist.entropy().mean()
-    loss = policy_loss + vf_coef * value_loss - ent_coef * entropy
-
-    with torch.no_grad():
-        clip_frac = ((ratio - 1).abs() > clip_eps).float().mean().item()
-        approx_kl = ((ratio - 1) - torch.log(ratio)).mean().item()
-    return loss, {"clip_frac": clip_frac, "approx_kl": approx_kl}
+from slm import ActorCritic, CartPole, compute_gae, get_device, ppo_loss, save_run, set_seed
 
 
 def ppo(

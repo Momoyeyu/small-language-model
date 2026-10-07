@@ -11,13 +11,20 @@ import random
 import pytest
 import torch
 
-from envs import CartPole
-from model import ActorCritic
+from slm import (
+    ROOT,
+    ActorCritic,
+    CartPole,
+    compute_gae,
+    discounted_returns,
+    get_device,
+    importance_sampling,
+    rollout,
+    set_seed,
+)
 from trainer.train_ppo import ppo, ppo_loss
 from trainer.train_reinforce import reinforce
 from trainer.train_rlhf import closed_form, rlhf_ppo
-from utils.common import ROOT, get_device, set_seed
-from utils.rl_utils import compute_gae, discounted_returns, importance_sampling, rollout
 
 DEVICE = get_device(os.environ.get("SLM_DEVICE", "cpu"))
 slow = pytest.mark.skipif(os.environ.get("SLM_SLOW") != "1", reason="set SLM_SLOW=1 to run full training")

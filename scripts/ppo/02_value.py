@@ -4,9 +4,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from envs import N_STATES, START, is_terminal, walk_step
-from utils.common import set_seed
-from utils.rl_utils import discounted_returns
+from slm import N_STATES, START, discounted_returns, is_terminal, set_seed, show, walk_step
 
 
 def policy_evaluation(gamma: float = 1.0, tol: float = 1e-10) -> list[float]:
@@ -43,8 +41,8 @@ if __name__ == "__main__":
     set_seed(0)
     V = policy_evaluation()
     V_mc = monte_carlo(10000)
-    print("true value  :", [round(i / 6, 4) for i in range(1, 6)])
-    print("Bellman     :", [round(v, 4) for v in V[1:-1]])
-    print("Monte Carlo :", [round(v, 4) for v in V_mc[1:-1]], f"(max error {max(abs(V_mc[i] - i / 6) for i in range(1, 6)):.4f})")
+    show("true value", [round(i / 6, 4) for i in range(1, 6)])
+    show("Bellman", [round(v, 4) for v in V[1:-1]])
+    show("Monte Carlo", f"{[round(v, 4) for v in V_mc[1:-1]]} (max error {max(abs(V_mc[i] - i / 6) for i in range(1, 6)):.4f})")
     # 在 C 处：Q(C, 右) = 0 + V(D)，Q(C, 左) = 0 + V(B)
-    print(f"A(C, right) = {V[4] - V[3]:+.4f}, A(C, left) = {V[2] - V[3]:+.4f}")
+    show("advantages at C", f"right {V[4] - V[3]:+.4f}, left {V[2] - V[3]:+.4f}")

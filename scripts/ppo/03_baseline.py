@@ -3,7 +3,14 @@
 用一个两臂老虎机演示：两个动作的奖励都是正数（10 与 11，外加噪声），
 这正是 CartPole 这类“奖励恒为正”的环境中 REINFORCE 方差大的根源。
 """
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 import torch
+
+from slm import show
 
 torch.manual_seed(0)
 logits = torch.zeros(2, requires_grad=True)       # 初始策略：两个动作各 1/2
@@ -22,9 +29,8 @@ def grad_estimate(n: int, baseline: float) -> torch.Tensor:
 # 精确的策略梯度：∇J = Σ_a π(a) ∇log π(a) Q(a)
 probs = torch.softmax(logits, -1)
 exact = torch.autograd.grad((probs * mean_reward).sum(), logits)[0]
-print("exact gradient:", exact.tolist())
+show("exact gradient", exact.tolist())
 
 for b in (0.0, 10.5):
     grads = torch.stack([grad_estimate(16, b) for _ in range(2000)])
-    print(f"baseline={b:4.1f}: mean {[round(x, 3) for x in grads.mean(0).tolist()]} | "
-          f"variance {[round(x, 3) for x in grads.var(0).tolist()]}")
+    show(f"baseline={b:4.1f}", f"mean {[round(x, 3) for x in grads.mean(0).tolist()]} | variance {[round(x, 3) for x in grads.var(0).tolist()]}")

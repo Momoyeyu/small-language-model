@@ -24,147 +24,186 @@
 
 </div>
 
-* To be clear up front: there is **no** model called small-language-model here. "Small" means taking the core techniques of large language models and cutting them **small** — small enough that a file can be read in one go, a script can be run end to end, and a claim can be verified by a single test.
-* Each module covers one LLM technique, implemented from scratch in plain **PyTorch**, without the high-level wrappers of Gym, TRL, Transformers, or similar frameworks.
-* Each module ships with a long-form article (in Chinese) whose formulas and variable names map one-to-one onto the code: every section has a runnable script, every claim has a test.
-* Everything runs on CPU, and most experiments finish in minutes on an ordinary laptop.
-* The first module is **PPO**: from MDPs all the way to RLHF. More modules will follow the [LLM article series](https://momoyeyu.github.io/archive/?category=LLM).
+* There is **no** model named small-language-model here. “Small” means reducing core LLM techniques until one file can be read in one sitting and one script can be run end to end.
+* `slm/` is a d2l-style reusable teaching core built directly on PyTorch, without high-level Gym, TRL, or Transformers wrappers.
+* Each chapter uses a long-form article for derivations, a notebook for complete executable teaching, numbered scripts for minimal experiments, and tests for implemented core behavior. Extensions discussed only in the articles are not presented as implemented features.
+* All core code and quick experiments support CPU execution. The project optimizes for clarity rather than training throughput or production deployment.
 
 > [!NOTE]
-> This project is built for **learning**, not performance: clarity comes first. To train real large models, use engineered frameworks such as TRL, OpenRLHF, verl, or Megatron.
+> For real large-model training, use engineered systems such as TRL, OpenRLHF, verl, or Megatron. This repository deliberately keeps the educational data flow and its limitations visible.
 
 ---
 
 # 📌 Introduction
 
-A modern LLM is a long stack of techniques: Transformers, MoE, normalization, positional encoding, RLHF… each with a full derivation behind it. Off-the-shelf frameworks, meanwhile, expose a handful of highly abstracted calls — one `trainer.train()` and an alignment run is done. Convenient, but it also keeps learners away from the actual algorithms.
+Modern LLMs stack Transformers, MoE, normalization, positional encoding, RLHF, and many other techniques. Production frameworks often hide the path from formulas to tensor operations behind a few APIs; this project instead turns each derivation step into PyTorch code that can be run, inspected, tested, and reused.
 
-small-language-model does one simple thing: **pick a technique, walk its derivation chain, and at every step turn the formula into code you can run and verify**. After finishing a module you should be able to write that technique from scratch yourself and know exactly which term of the formula each line implements.
-
-#### 🎉 Released modules
-
-| Module | Companion article | Contents | Released |
+| Chapter | Companion article | Executable notebook | Contents |
 | --- | --- | --- | --- |
-| [PPO](#-ppo-module) | [从零理解 PPO](https://momoyeyu.github.io/posts/llm-ppo/) | MDP → value functions → policy gradient → Actor-Critic → trust region → PPO → RLHF | 2026-10 |
+| EP.0 Transformer | [Transformer 的数学表示与代码实现](https://momoyeyu.github.io/posts/llm-transformer/) | [00_transformer.ipynb](notebooks/00_transformer.ipynb) | Attention, MHA, FFN, masks, Encoder–Decoder |
+| EP.1 MoE | [MoE 技术原理](https://momoyeyu.github.io/posts/llm-moe/) | [01_moe.ipynb](notebooks/01_moe.ipynb) | Router, load balancing, capacity, shared experts |
+| EP.2 Normalization | [一文搞懂归一化技术](https://momoyeyu.github.io/posts/llm-normalization/) | [02_normalization.ipynb](notebooks/02_normalization.ipynb) | BatchNorm, LayerNorm, RMSNorm, Pre/Post, QK-Norm |
+| EP.3 Position | [位置编码技术的演进](https://momoyeyu.github.io/posts/llm-position-encoding/) | [03_position.ipynb](notebooks/03_position.ipynb) | Learned PE, relative bias, ALiBi, RoPE, length scaling |
+| EP.4 PPO | [从零理解 PPO](https://momoyeyu.github.io/posts/llm-ppo/) | [04_ppo.ipynb](notebooks/04_ppo.ipynb) | MDP, GAE, PPO, short training loops, toy RLHF |
+
+Contributors can open the local static architecture guide in [Chinese](docs/index.html) or [English](docs/en.html).
 
 # 📌 Quick Start
 
-My verification environment (for reference)
-
-* GPU: NVIDIA GeForce RTX 4080 SUPER (32GB) × 2
-* OS: Ubuntu 24.04
-* Python==3.12
-* PyTorch==2.x
-
-## Step 0
-
 ```bash
-# Clone
 git clone https://github.com/Momoyeyu/small-language-model
 cd small-language-model
 
-# Option 1: uv (recommended)
+# uv (recommended)
 uv venv --python 3.12 && source .venv/bin/activate
 uv pip install -r requirements.txt
 
-# Option 2: pip
+# Or use an existing environment
 pip install -r requirements.txt
 
-# In mainland China, add a mirror: --index-url https://mirrors.aliyun.com/pypi/simple
-```
-
-```bash
-# Run all fast tests to confirm the environment works (~30 s on CPU)
 pytest
 ```
 
-# 📌 PPO Module
+When package downloads need a mainland China mirror, append `--index-url https://mirrors.aliyun.com/pypi/simple` to the install command.
 
-RLHF is what taught ChatGPT to talk like a helpful assistant, and the optimizer behind RLHF is PPO. Yet the PPO objective is a single line sitting on top of a whole stack of RL concepts: policies, returns, value functions, advantages, policy gradients, importance sampling, trust regions… Jump straight to PPO and you will likely remember the `clip` without understanding why it looks the way it does. This module takes PPO as its destination and walks the whole derivation chain from zero.
-
-* Hand-written CartPole (physics identical to Gymnasium CartPole-v1) and random-walk environments.
-* Bellman policy evaluation and Monte Carlo estimation, checked against the closed-form values.
-* Full REINFORCE training (with / without baseline) that makes the effect of a baseline on variance obvious.
-* GAE (Generalized Advantage Estimation), with both the λ=0 and λ=1 limits verified.
-* Complete PPO: clipped objective, value loss, entropy bonus, advantage normalization, orthogonal init, learning-rate annealing, gradient clipping.
-* Toy RLHF: a tiny GRU language model + per-token KL penalty + sequence-level reward + GAE + PPO, compared against the closed-form optimum of KL-regularized RL.
-
-> The CartPole networks are tiny and data shuttles between CPU and GPU at every environment step, so **`--device cpu` is often faster than a GPU**; the RLHF part uses larger batches and benefits somewhat from a GPU.
-
-## Ⅰ 📖 Follow the derivation chain
-
-Each script maps to one section of the article and finishes in seconds:
+The base requirements contain only PyTorch, Matplotlib, and pytest. Without the notebook extras, `tests/test_notebooks.py` is explicitly skipped while the remaining core tests still collect and run. Complete notebook builds and checks require:
 
 ```bash
-python scripts/ppo/01_mdp.py                 # sample trajectories, compute discounted returns backwards
-python scripts/ppo/02_value.py               # Bellman equation vs. Monte Carlo, advantage function
-python scripts/ppo/03_baseline.py            # a baseline keeps the gradient unbiased but cuts variance
-python scripts/ppo/04_gae.py                 # the λ=0 / λ=1 limits of GAE
-python scripts/ppo/05_importance_sampling.py # importance sampling: unbiased, but variance grows with distance
-python scripts/ppo/06_ppo_clip.py            # clipping blocks over-optimism, never error correction
+uv pip install -r requirements-notebooks.txt
+make notebooks
+make check-notebooks
 ```
 
-## Ⅱ 🛠️ Training
+`requirements.txt` remains at `torch>=2.1`. RMSNorm comparisons use a formula reference when native `nn.RMSNorm` is unavailable, so the dependency floor does not need to move.
 
-### 1' Policy gradient: REINFORCE
+# 📌 Executable Notebooks
 
-```bash
-python trainer/train_reinforce.py --device cpu                # with baseline
-python trainer/train_reinforce.py --device cpu --no_baseline  # vanilla REINFORCE
-```
+The recommended reading order is below, but every notebook can also be opened independently and run with **Run All**:
 
-> Training writes the weights `reinforce_baseline_seed0.pth` and the training log `reinforce_baseline_seed0.json` to `./out/`
+1. [EP.0 Transformer](notebooks/00_transformer.ipynb)
+2. [EP.1 MoE](notebooks/01_moe.ipynb)
+3. [EP.2 Normalization](notebooks/02_normalization.ipynb)
+4. [EP.3 Position](notebooks/03_position.ipynb)
+5. [EP.4 PPO and RLHF](notebooks/04_ppo.ipynb)
 
-### 2' PPO
+Open `notebooks/*.ipynb` directly in an IDE with Jupyter support and select the repository `.venv` Python kernel; installing JupyterLab is not required. Every notebook can Run All from either the repository root or the `notebooks/` directory.
 
-```bash
-python trainer/train_ppo.py --device cpu
-```
+The first chapter that teaches an implementation expands the real executable source from `slm/`; later chapters import only symbols already taught. Experiments can be edited interactively in a notebook. For persistent contributions, edit the pedagogical manifest in `tools/chapters.py`, edit reusable core code in `slm/`, then run `make notebooks`. `tools/build_notebooks.py` handles source extraction, demo cleanup, execution, and freshness checks; any change to `slm/*.py` invalidates the core digest of all five notebooks.
 
-Each update prints the average return, the clip fraction `clip_frac`, and the approximate KL `approx_kl`:
+The generation flow is:
 
 ```text
-update  31/48 | steps  63488 | avg return (last 10)  464.7 | clip_frac 0.000 | approx_kl 0.0011
-update  32/48 | steps  65536 | avg return (last 10)  500.0 | clip_frac 0.016 | approx_kl 0.0031
+slm/ reusable core ─┐
+numbered scripts ───┼─> tools/chapters.py ─> tools/build_notebooks.py ─> notebooks/*.ipynb
+teaching prose ─────┘
 ```
 
-### 3' Toy RLHF
+# 📌 EP.0 Transformer Module
+
+Starting with scaled dot-product attention, this chapter composes multi-head attention, token-wise FFNs, causal/padding masks, sinusoidal position encodings, an Encoder, a Decoder, and a tied classifier. The complete model is educational; random-initialization demos are not a trained translation system.
 
 ```bash
-python trainer/train_rlhf.py --beta 0.1   # with KL penalty
-python trainer/train_rlhf.py --beta 0     # without KL penalty — watch the policy collapse
+python scripts/transformer/01_attention.py
+python scripts/transformer/02_multi_head.py
+python scripts/transformer/03_masked_attention.py
+python scripts/transformer/04_transformer.py
 ```
 
-At the end of training the closed-form optimum of KL-regularized RL is printed alongside for comparison.
+* Core: [slm/transformer.py](slm/transformer.py)
+* Focused tests: [tests/test_transformer.py](tests/test_transformer.py)
+* Notebook: [notebooks/00_transformer.ipynb](notebooks/00_transformer.ipynb)
 
-### 4' Evaluation and plots
+# 📌 EP.1 MoE Module
+
+This chapter reuses the Transformer FFN and adds a Top-K Router, auxiliary load balancing, capacity shared across routing slots, unified dispatch, and always-on shared experts. MAC accounting covers expert matrix multiplications only, and the teaching DeepSeekMoE is not a production architecture replica.
 
 ```bash
-python eval_cartpole.py --weight ppo_seed0 --greedy   # evaluate a trained CartPole policy
-python scripts/ppo/plot_curves.py                     # plot learning curves from ./out
+python scripts/moe/01_dense_vs_moe.py
+python scripts/moe/02_router.py
+python scripts/moe/03_load_balance.py
+python scripts/moe/04_capacity.py
+python scripts/moe/05_deepseek_moe.py
 ```
 
-Use `--seed` to switch random seeds; curves from several seeds are far more representative.
+* Core: [slm/moe.py](slm/moe.py)
+* Focused tests: [tests/test_moe.py](tests/test_moe.py)
+* Notebook: [notebooks/01_moe.ipynb](notebooks/01_moe.ipynb)
 
-## Ⅲ ✅ Tests
+# 📌 EP.2 Normalization Module
+
+This chapter derives BatchNorm, LayerNorm, and RMSNorm from their axes on `[N,L,C]`, then compares Pre/Post-Norm and QK-Norm. Timings are local CPU eager-forward measurements, not universal performance claims.
 
 ```bash
-pytest tests/test_ppo.py                                  # fast tests, ~30 s on CPU
-SLM_SLOW=1 pytest tests/test_ppo.py                       # include full training runs
-SLM_SLOW=1 SLM_DEVICE=cuda pytest tests/test_ppo.py       # choose the device
+python scripts/normalization/01_residual_drift.py
+python scripts/normalization/02_batchnorm.py
+python scripts/normalization/03_layernorm.py
+python scripts/normalization/04_rmsnorm.py
+python scripts/normalization/05_pre_post_norm.py
+python scripts/normalization/06_qk_norm.py
 ```
 
-## Ⅳ �️ Code map
+* Core: [slm/norm.py](slm/norm.py)
+* Focused tests: [tests/test_normalization.py](tests/test_normalization.py)
+* Notebook: [notebooks/02_normalization.ipynb](notebooks/02_normalization.ipynb)
 
-| Step | Article section | Code |
+# 📌 EP.3 Position Module
+
+This chapter compares permutation equivariance, learned absolute positions, relative biases, ALiBi, RoPE, PI/NTK scaling, and sliding-window PPL. T5 uses a simplified clipped signed distance rather than logarithmic buckets; Shaw implements only the key-relative teaching term; article-only extensions such as YaRN and multidimensional PE are not in the core.
+
+```bash
+python scripts/position/01_permutation_equivariance.py
+python scripts/position/02_relative_bias.py
+python scripts/position/03_alibi.py
+python scripts/position/04_rope.py
+python scripts/position/05_extrapolation.py
+python scripts/position/06_nope.py
+```
+
+* Core: [slm/position.py](slm/position.py)
+* Focused tests: [tests/test_position.py](tests/test_position.py)
+* Notebook: [notebooks/03_position.ipynb](notebooks/03_position.ipynb)
+
+# 📌 EP.4 PPO Module
+
+PPO’s one-line objective rests on MDPs, returns, values, advantages, policy gradients, importance sampling, and trust regions. This chapter retains hand-written environments, complete trainers, and toy RLHF; the notebook also expands short PPO/RLHF update loops. Short runs check data flow and do not prove convergence.
+
+```bash
+python scripts/ppo/01_mdp.py
+python scripts/ppo/02_value.py
+python scripts/ppo/03_baseline.py
+python scripts/ppo/04_gae.py
+python scripts/ppo/05_importance_sampling.py
+python scripts/ppo/06_ppo_clip.py
+```
+
+## Ⅰ 🛠️ Training, Evaluation, and Tests
+
+```bash
+python trainer/train_reinforce.py --device cpu
+python trainer/train_reinforce.py --device cpu --no_baseline
+python trainer/train_ppo.py --device cpu
+python trainer/train_rlhf.py --beta 0.1
+python trainer/train_rlhf.py --beta 0
+
+python eval_cartpole.py --weight ppo_seed0 --greedy
+python scripts/ppo/plot_curves.py
+
+pytest tests/test_ppo.py
+SLM_SLOW=1 SLM_DEVICE=cpu pytest tests/test_ppo.py
+```
+
+The trainers write weights and records under `out/`. CartPole networks are tiny and step-wise environment interaction is generally well suited to CPU execution; this is not a device conclusion for all RL workloads.
+
+## Ⅱ Code Map
+
+| Derivation step | Canonical core | Demo / training |
 | --- | --- | --- |
-| MDP | 马尔可夫决策过程 | [envs/cartpole.py](envs/cartpole.py), `discounted_returns` / `rollout` in [utils/rl_utils.py](utils/rl_utils.py), [01_mdp.py](scripts/ppo/01_mdp.py) |
-| Value functions | 价值函数 | [envs/random_walk.py](envs/random_walk.py), [02_value.py](scripts/ppo/02_value.py) |
-| Policy gradient | 策略梯度 | `Policy` in [model/model_rl.py](model/model_rl.py), [03_baseline.py](scripts/ppo/03_baseline.py), [train_reinforce.py](trainer/train_reinforce.py) |
-| Actor-Critic | Actor-Critic | `compute_gae` in [utils/rl_utils.py](utils/rl_utils.py), [04_gae.py](scripts/ppo/04_gae.py) |
-| Trust region | 信任域 | `importance_sampling` in [utils/rl_utils.py](utils/rl_utils.py), [05_importance_sampling.py](scripts/ppo/05_importance_sampling.py) |
-| PPO | PPO | `ActorCritic` in [model/model_rl.py](model/model_rl.py), [06_ppo_clip.py](scripts/ppo/06_ppo_clip.py), [train_ppo.py](trainer/train_ppo.py) |
-| RLHF | PPO 与 RLHF | [model/model_lm.py](model/model_lm.py), [train_rlhf.py](trainer/train_rlhf.py) |
+| MDP and random walk | [slm/envs.py](slm/envs.py) | [01_mdp.py](scripts/ppo/01_mdp.py), [02_value.py](scripts/ppo/02_value.py) |
+| Returns, rollout, and GAE | [slm/rl.py](slm/rl.py) | [04_gae.py](scripts/ppo/04_gae.py) |
+| Policy and Actor-Critic | [slm/rl.py](slm/rl.py) | [train_reinforce.py](trainer/train_reinforce.py) |
+| Importance sampling and `ppo_loss` | [slm/rl.py](slm/rl.py) | [05_importance_sampling.py](scripts/ppo/05_importance_sampling.py), [06_ppo_clip.py](scripts/ppo/06_ppo_clip.py), [train_ppo.py](trainer/train_ppo.py) |
+| TinyLM and token log-probabilities | [slm/lm.py](slm/lm.py) | [train_rlhf.py](trainer/train_rlhf.py) |
+| Focused tests | [tests/test_ppo.py](tests/test_ppo.py) | [04_ppo.ipynb](notebooks/04_ppo.ipynb) |
 
 <details>
 <summary><b>The heart of PPO: the clipped objective</b></summary>
@@ -185,24 +224,24 @@ $$
 
 ![clip-objective](./images/ppo/clip-objective.svg)
 
-With a positive advantage, the gradient vanishes once the ratio exceeds $1+\epsilon$; with a negative advantage, once it drops below $1-\epsilon$. Outside the shaded regions the gradient is intact and pulls a policy that went the wrong way back.
+With a positive advantage, the gradient vanishes after the ratio exceeds $1+\epsilon$; with a negative advantage, after it falls below $1-\epsilon$. Gradients in the other directions can still correct the policy.
 
 </details>
 
 <details>
-<summary><b>The four models of RLHF</b></summary>
+<summary><b>The four models in RLHF</b></summary>
 
 ![rlhf-ppo](./images/ppo/rlhf-ppo.svg)
 
-In the toy RLHF, the Actor and Critic share one GRU backbone, the reward model is replaced by a rule (the fraction of token `3`), and the reference model is a frozen copy of the initial policy.
+In the toy RLHF setup, Actor and Critic share a GRU backbone, the reward model is replaced by the fraction-of-token-`3` rule, and the reference is a frozen copy of the initial policy.
 
 </details>
 
-## Ⅴ � Results
+## Ⅲ Historical Results (Pre-Migration)
 
-All results below were produced in the verification environment above by following the Quick Start steps. CartPole runs use `--device cpu`; the toy RLHF uses `--device cuda`.
+The numbers below are archived runs from before the unified `slm` core and notebook-generator migration. They are not a current CUDA rerun of this refactor. The original recorded environment was Ubuntu 24.04, Python 3.12, PyTorch 2.x, and NVIDIA GeForce RTX 4080 SUPER; CartPole used CPU and toy RLHF used CUDA. Values are preserved unchanged for reproduction comparisons.
 
-**CartPole** (3 random seeds: 0 / 1 / 2)
+**CartPole** (3 seeds: 0 / 1 / 2)
 
 | Algorithm | Budget | Average return at the end | First 10-episode average ≥ 475 | Time per seed |
 | --- | --- | --- | --- | --- |
@@ -210,41 +249,43 @@ All results below were produced in the verification environment above by followi
 | REINFORCE + baseline | 1000 episodes (320k–330k steps) | 484 / 463 / 492 | — | ~90 s |
 | PPO | 100k steps | 448 / 500 / 500 | 29k / 37k / 40k steps | ~100 s |
 
-> REINFORCE averages the last 100 episodes; PPO averages the last 10.
-
-Evaluated with `eval_cartpole.py --greedy`, all three trained PPO policies balance the pole for the full 500 steps in every one of 20 episodes.
+> REINFORCE averages the final 100 episodes; PPO averages the final 10. When the archived PPO weights were evaluated with `eval_cartpole.py --greedy`, all 3 seeds lasted the full 500 steps in each of 20 episodes.
 
 ![learning-curves](./images/ppo/learning_curves.png)
 
-**Toy RLHF** (average of the last 10 iterations)
+**Toy RLHF** (average of the final 10 iterations)
 
-| KL coefficient β | Score | Sequence KL | Theory |
+| KL coefficient β | Score | Sequence KL | Theoretical uniform-reference comparator |
 | --- | --- | --- | --- |
 | 0 | 1.000 | 16.75 | collapse: score 1, KL → 8 log 8 ≈ 16.64 |
 | 0.1 | 0.332 | 1.11 | closed form π* ∝ π_ref · exp(r / β): score 0.333, KL 1.159 |
 
-Without a KL penalty the policy collapses to emitting only token `3` — reward hacking in miniature. With the penalty, the policy PPO converges to closely matches the closed-form optimum of KL-regularized RL.
-
-**Tests**: all 12 fast tests pass (~30 s on CPU); all 16 tests including full training pass under `SLM_SLOW=1 SLM_DEVICE=cuda` (~27 min).
+The closed-form values in the table are a theoretical **uniform-reference** comparator. The current toy trainer freezes a randomly initialized network, which is not exactly uniform, so the table is not an exact equality for the sampled training process.
 
 # 📌 Project Layout
 
 ```text
 small-language-model
-├── envs/              # hand-written environments: CartPole, random walk
-├── model/             # networks: Policy, ActorCritic, TinyLM
-├── utils/             # discounted returns, rollout, GAE, importance sampling, seed & device
-├── trainer/           # training scripts: REINFORCE, PPO, toy RLHF
-├── scripts/
-│   └── ppo/           # PPO module: numbered demos along the derivation chain + curve plotting
-├── tests/             # one test file per module, one test per claim
-├── eval_cartpole.py   # evaluate a trained CartPole policy
-└── images/
+├── slm/                # 8 canonical core modules: common/envs/lm/moe/norm/position/rl/transformer
+├── scripts/            # 5 numbered demo chapters: transformer/moe/normalization/position/ppo
+├── notebooks/          # 5 executed teaching notebooks
+├── docs/               # bilingual static core architecture docs, Pages-ready
+├── tools/              # chapters.py manifest + build_notebooks.py generator
+├── trainer/            # full REINFORCE, PPO, and toy RLHF CLIs
+├── tests/              # core, scientific assertion, and notebook infrastructure tests
+├── model/ envs/ utils/ # thin compatibility facades; not teaching implementation sources
+├── eval_cartpole.py
+├── requirements.txt
+└── requirements-notebooks.txt
 ```
 
 # 📌 References
 
-* [从零理解 PPO](https://momoyeyu.github.io/posts/llm-ppo/) (companion article of the PPO module, in Chinese)
+* [Transformer 的数学表示与代码实现](https://momoyeyu.github.io/posts/llm-transformer/)
+* [MoE 技术原理](https://momoyeyu.github.io/posts/llm-moe/)
+* [一文搞懂归一化技术](https://momoyeyu.github.io/posts/llm-normalization/)
+* [位置编码技术的演进](https://momoyeyu.github.io/posts/llm-position-encoding/)
+* [从零理解 PPO](https://momoyeyu.github.io/posts/llm-ppo/)
 * [Reinforcement Learning: An Introduction](http://incompleteideas.net/book/the-book-2nd.html)
 * [OpenAI Spinning Up in Deep RL](https://spinningup.openai.com/)
 * [High-Dimensional Continuous Control Using Generalized Advantage Estimation](https://arxiv.org/abs/1506.02438)
@@ -252,7 +293,7 @@ small-language-model
 * [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347)
 * [The 37 Implementation Details of Proximal Policy Optimization](https://iclr-blog-track.github.io/2022/03/25/ppo-implementation-details/)
 * [Training Language Models to Follow Instructions with Human Feedback](https://arxiv.org/abs/2203.02155)
-* [MiniMind](https://github.com/jingyaogong/minimind): the layout and README style of this repository are inspired by it
+* [MiniMind](https://github.com/jingyaogong/minimind): repository organization and README style were inspired by this project
 
 # 📌 License
 

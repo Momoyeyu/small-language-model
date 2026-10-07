@@ -6,8 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 import torch
 
-from utils.common import set_seed
-from utils.rl_utils import compute_gae, discounted_returns
+from slm import compute_gae, discounted_returns, set_seed, show
 
 set_seed(0)
 T, gamma = 10, 0.9
@@ -19,13 +18,13 @@ last_value = torch.tensor(0.7)
 adv, ret = compute_gae(rewards, values, dones, last_value, gamma, lam=1.0)
 G = torch.tensor(discounted_returns(rewards[:5].tolist(), gamma)
                  + discounted_returns(rewards[5:].tolist(), gamma))
-print("λ=1 equals Monte Carlo :", torch.allclose(adv, G - values), torch.allclose(ret, G))
+show("lambda=1 Monte Carlo", (torch.allclose(adv, G - values), torch.allclose(ret, G)))
 
 adv, _ = compute_gae(rewards, values, dones, last_value, gamma, lam=0.0)
 next_values = torch.cat([values[1:], last_value.view(1)])
-print("λ=0 equals one-step TD :", torch.allclose(adv, rewards + gamma * next_values * (1 - dones) - values))
+show("lambda=0 one-step TD", torch.allclose(adv, rewards + gamma * next_values * (1 - dones) - values))
 
 # 最后一步回合未结束时，用 last_value 做 bootstrap
 adv, _ = compute_gae(rewards, values, torch.zeros(T), last_value, gamma, lam=1.0)
 G = torch.tensor(discounted_returns(rewards.tolist() + [last_value.item()], gamma)[:T])
-print("bootstrap from V(s_T)  :", torch.allclose(adv, G - values, atol=1e-6))
+show("bootstrap from V(s_T)", torch.allclose(adv, G - values, atol=1e-6))

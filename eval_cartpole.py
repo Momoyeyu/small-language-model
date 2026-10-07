@@ -3,9 +3,7 @@ import os
 
 import torch
 
-from envs import CartPole
-from model import ActorCritic, Policy
-from utils.common import OUT_DIR, set_seed
+from slm import OUT_DIR, ActorCritic, CartPole, Policy, set_seed
 
 
 def main() -> None:

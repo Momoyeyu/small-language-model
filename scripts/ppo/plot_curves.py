@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from utils.common import OUT_DIR, ROOT
+from slm import OUT_DIR, ROOT
 
 STEP, WINDOW = 2500, 10_000
 

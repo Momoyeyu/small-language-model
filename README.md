@@ -24,147 +24,186 @@
 
 </div>
 
-* 先说清楚：这里**没有**一个叫 small-language-model 的模型。“小语言模型”指的是把大语言模型的核心技术**拆小**——小到一个文件能读完、一个脚本能跑完、一条结论能用一个测试验证。
-* 每个模块对应一个 LLM 技术主题，全部只依赖 **PyTorch** 从零实现，不依赖 Gym、TRL、Transformers 等第三方框架的高层封装。
-* 每个模块都配有一篇长文讲解，代码与文章中的公式、变量名一一对应：每一节都有可以直接运行的脚本，每一条结论都有对应的测试。
-* 所有代码都能在 CPU 上跑通，大多数实验在一台普通笔记本上几分钟就能完成。
-* 第一个模块是 **PPO**：从 MDP 一路推到 RLHF。更多模块会随着 [LLM 系列文章](https://momoyeyu.github.io/archive/?category=LLM)陆续加入。
+* 这里**没有**一个叫 small-language-model 的模型。“小语言模型”指把大语言模型的核心技术拆小到一个文件能读完、一个脚本能跑完。
+* `slm/` 是 d2l 风格的可复用教学核心，只依赖 PyTorch，不依赖 Gym、TRL、Transformers 等高层封装。
+* 每章由长文负责推导、Notebook 负责完整可执行教学、编号脚本负责最小实验、测试负责已经实现的核心行为。文章中仅讨论但核心未实现的扩展，不会被包装成已覆盖功能。
+* 所有核心与快速实验支持 CPU；项目优先清晰可读，而不是训练吞吐或生产部署。
 
 > [!NOTE]
-> 本项目面向**学习**而非性能：代码优先清晰可读。若要训练真正的大模型，请使用 TRL、OpenRLHF、verl、Megatron 等工程化框架。
+> 若要训练真正的大模型，请使用 TRL、OpenRLHF、verl、Megatron 等工程化框架。本仓库保留教学所需的显式数据流与限制。
 
 ---
 
 # 📌 项目介绍
 
-现代 LLM 由一长串技术堆叠而成：Transformer、MoE、归一化、位置编码、RLHF……每一项背后都有一套完整的推导。而现成的框架往往只暴露几行高度封装的接口，`trainer.train()` 一行就能跑完一次对齐训练。这很方便，却也把学习者和真正的算法隔离开来。
+现代 LLM 由 Transformer、MoE、归一化、位置编码、RLHF 等技术堆叠而成。现成框架往往用几行接口隐藏了公式到张量操作的映射；本项目则沿推导链把每一步写成可运行、可检查、可复用的 PyTorch 代码。
 
-small-language-model 想做的事情很简单：**挑一个技术，沿着它的推导链，每走一步都把公式落成一段可以运行、可以验证的代码**。读完一个模块，你应该能够自己从零写出这项技术，并清楚每一行代码在公式中对应的是哪一项。
-
-#### 🎉 已发布模块
-
-| 模块 | 配套文章 | 内容 | 发布 |
+| 章节 | 配套文章 | 可执行 Notebook | 内容 |
 | --- | --- | --- | --- |
-| [PPO](#-ppo-模块) | [从零理解 PPO](https://momoyeyu.github.io/posts/llm-ppo/) | MDP → 价值函数 → 策略梯度 → Actor-Critic → 信任域 → PPO → RLHF | 2026-10 |
+| EP.0 Transformer | [Transformer 的数学表示与代码实现](https://momoyeyu.github.io/posts/llm-transformer/) | [00_transformer.ipynb](notebooks/00_transformer.ipynb) | Attention、MHA、FFN、mask、Encoder–Decoder |
+| EP.1 MoE | [MoE 技术原理](https://momoyeyu.github.io/posts/llm-moe/) | [01_moe.ipynb](notebooks/01_moe.ipynb) | Router、负载均衡、capacity、shared experts |
+| EP.2 归一化 | [一文搞懂归一化技术](https://momoyeyu.github.io/posts/llm-normalization/) | [02_normalization.ipynb](notebooks/02_normalization.ipynb) | BatchNorm、LayerNorm、RMSNorm、Pre/Post、QK-Norm |
+| EP.3 位置编码 | [位置编码技术的演进](https://momoyeyu.github.io/posts/llm-position-encoding/) | [03_position.ipynb](notebooks/03_position.ipynb) | Learned PE、相对 bias、ALiBi、RoPE、长度缩放 |
+| EP.4 PPO | [从零理解 PPO](https://momoyeyu.github.io/posts/llm-ppo/) | [04_ppo.ipynb](notebooks/04_ppo.ipynb) | MDP、GAE、PPO、短训练循环、玩具 RLHF |
+
+贡献者可阅读本地静态架构文档：[中文版](docs/index.html) / [English](docs/en.html)。
 
 # 📌 快速开始
 
-本人的验证环境（供参考）
-
-* GPU: NVIDIA GeForce RTX 4080 SUPER (32GB) × 2
-* OS: Ubuntu 24.04
-* Python==3.12
-* PyTorch==2.x
-
-## 第 0 步
-
 ```bash
-# 克隆仓库
 git clone https://github.com/Momoyeyu/small-language-model
 cd small-language-model
 
-# 方式 1：uv（推荐）
+# uv（推荐）
 uv venv --python 3.12 && source .venv/bin/activate
 uv pip install -r requirements.txt
 
-# 方式 2：pip
+# 或使用已有环境
 pip install -r requirements.txt
 
-# 国内网络可加镜像源：--index-url https://mirrors.aliyun.com/pypi/simple
-```
-
-```bash
-# 运行全部快速测试，确认环境可用（CPU 上约 30 秒）
 pytest
 ```
 
-# 📌 PPO 模块
+国内网络安装较慢时，可在安装命令后添加 `--index-url https://mirrors.aliyun.com/pypi/simple`。
 
-RLHF 让 ChatGPT 学会了“说人话”，而 RLHF 背后的优化算法正是 PPO。然而，PPO 的目标函数只有一行，背后却压着一整套强化学习概念：策略、回报、价值函数、优势函数、策略梯度、重要性采样、信任域……如果跳过这些基础直接读 PPO，很容易只记住一个 `clip`，却不明白它为什么长这样。这个模块以 PPO 为目标，从零开始走完整条推导链。
-
-* 手写的 CartPole 环境（物理参数与 Gymnasium CartPole-v1 一致）与随机游走环境。
-* 贝尔曼方程策略评估与蒙特卡洛估计，并与解析解对照。
-* REINFORCE（带 / 不带基线）的完整训练脚本，直观展示基线对方差的影响。
-* GAE（Generalized Advantage Estimation）实现，并验证 λ=0 与 λ=1 两个极限。
-* 完整的 PPO：裁剪目标、价值损失、熵奖励、优势归一化、正交初始化、学习率退火、梯度裁剪。
-* 玩具 RLHF：小型 GRU 语言模型 + 逐 token KL 惩罚 + 序列级奖励 + GAE + PPO，并与 KL 正则最优策略的闭式解对照。
-
-> CartPole 上的网络很小，逐步与环境交互时数据在 CPU 和 GPU 之间来回拷贝，因此 **`--device cpu` 往往比 GPU 更快**；RLHF 部分 batch 较大，GPU 会有一定优势。
-
-## Ⅰ 📖 跟着推导链跑脚本
-
-每个脚本对应文章中的一节，几秒钟就能跑完：
+基础依赖只包含 PyTorch、Matplotlib 与 pytest。未安装 Notebook extras 时，`tests/test_notebooks.py` 会明确跳过，其他核心测试仍可收集和运行。完整 Notebook 构建与检查需要：
 
 ```bash
-python scripts/ppo/01_mdp.py                 # 采样轨迹，倒序计算折扣回报
-python scripts/ppo/02_value.py               # 贝尔曼方程 vs 蒙特卡洛，计算优势函数
-python scripts/ppo/03_baseline.py            # 基线不改变梯度期望，却能降低方差
-python scripts/ppo/04_gae.py                 # GAE 的 λ=0 / λ=1 两个极限
-python scripts/ppo/05_importance_sampling.py # 重要性采样：无偏，但分布越远方差越大
-python scripts/ppo/06_ppo_clip.py            # 裁剪只阻止过度乐观，不阻止修正错误
+uv pip install -r requirements-notebooks.txt
+make notebooks
+make check-notebooks
 ```
 
-## Ⅱ 🛠️ 训练
+`requirements.txt` 保持 `torch>=2.1`；RMSNorm 对拍在原生 `nn.RMSNorm` 不可用时使用公式参考，不要求提升依赖下限。
 
-### 1' 策略梯度：REINFORCE
+# 📌 可执行 Notebook
 
-```bash
-python trainer/train_reinforce.py --device cpu                # 带基线
-python trainer/train_reinforce.py --device cpu --no_baseline  # 原始 REINFORCE
-```
+建议按以下顺序阅读，也可以独立打开任意一章并 **Run All**：
 
-> 训练后会在 `./out/` 下得到权重 `reinforce_baseline_seed0.pth` 与训练记录 `reinforce_baseline_seed0.json`
+1. [EP.0 Transformer](notebooks/00_transformer.ipynb)
+2. [EP.1 MoE](notebooks/01_moe.ipynb)
+3. [EP.2 归一化](notebooks/02_normalization.ipynb)
+4. [EP.3 位置编码](notebooks/03_position.ipynb)
+5. [EP.4 PPO 与 RLHF](notebooks/04_ppo.ipynb)
 
-### 2' PPO
+可在支持 Jupyter 的 IDE 中直接打开 `notebooks/*.ipynb`，选择仓库 `.venv` 的 Python kernel；不要求额外安装 JupyterLab。Notebook 从仓库根目录或 `notebooks/` 目录运行都能定位项目。
 
-```bash
-python trainer/train_ppo.py --device cpu
-```
+首次教学的实现会从 `slm/` 展开成真实可执行源码；后续章节只导入已经教过的符号。Notebook 中的实验可以交互修改；需要持久贡献时，请修改 `tools/chapters.py` 中的教学清单，核心实现修改 `slm/`，然后运行 `make notebooks`。`tools/build_notebooks.py` 负责源码抽取、demo 清理、执行和 freshness 检查；任意 `slm/*.py` 变化都会使五本 Notebook 的 core digest 过期。
 
-训练过程中会打印每轮更新的平均回报、裁剪比例 `clip_frac` 与近似 KL `approx_kl`：
+数据流如下：
 
 ```text
-update  31/48 | steps  63488 | avg return (last 10)  464.7 | clip_frac 0.000 | approx_kl 0.0011
-update  32/48 | steps  65536 | avg return (last 10)  500.0 | clip_frac 0.016 | approx_kl 0.0031
+slm/ reusable core ─┐
+numbered scripts ───┼─> tools/chapters.py ─> tools/build_notebooks.py ─> notebooks/*.ipynb
+teaching prose ─────┘
 ```
 
-### 3' 玩具 RLHF
+# EP.0 Transformer 模块
+
+从缩放点积开始，逐层组合多头注意力、逐 token FFN、causal/padding mask、正弦位置、Encoder、Decoder 与 tied 分类头。完整模型是教学实现；随机初始化 demo 不代表已经训练出的翻译系统。
 
 ```bash
-python trainer/train_rlhf.py --beta 0.1   # 带 KL 惩罚
-python trainer/train_rlhf.py --beta 0     # 不带 KL 惩罚，观察策略坍缩
+python scripts/transformer/01_attention.py
+python scripts/transformer/02_multi_head.py
+python scripts/transformer/03_masked_attention.py
+python scripts/transformer/04_transformer.py
 ```
 
-训练结束时会同时打印 KL 正则下最优策略的闭式解，方便对照。
+* 核心：[slm/transformer.py](slm/transformer.py)
+* 聚焦测试：[tests/test_transformer.py](tests/test_transformer.py)
+* Notebook：[notebooks/00_transformer.ipynb](notebooks/00_transformer.ipynb)
 
-### 4' 评估与可视化
+# 📌 EP.1 MoE 模块
+
+复用 Transformer FFN，加入 Top-K Router、辅助负载均衡、跨 slot 共享 capacity、统一 dispatch，以及 always-on shared experts。MAC 统计只数专家矩阵乘；教学版 DeepSeekMoE 不是生产架构复刻。
 
 ```bash
-python eval_cartpole.py --weight ppo_seed0 --greedy   # 评估训练好的 CartPole 策略
-python scripts/ppo/plot_curves.py                     # 把 ./out 下的训练记录画成学习曲线
+python scripts/moe/01_dense_vs_moe.py
+python scripts/moe/02_router.py
+python scripts/moe/03_load_balance.py
+python scripts/moe/04_capacity.py
+python scripts/moe/05_deepseek_moe.py
 ```
 
-`--seed` 参数可以切换随机种子，多跑几个种子再画图，曲线会更有代表性。
+* 核心：[slm/moe.py](slm/moe.py)
+* 聚焦测试：[tests/test_moe.py](tests/test_moe.py)
+* Notebook：[notebooks/01_moe.ipynb](notebooks/01_moe.ipynb)
 
-## Ⅲ ✅ 测试
+# 📌 EP.2 归一化模块
+
+从 `[N,L,C]` 的统计轴实现 BatchNorm、LayerNorm、RMSNorm，再比较 Pre/Post-Norm 和 QK-Norm。计时是本地 CPU eager forward 的局部测量，不代表普遍性能优劣。
 
 ```bash
-pytest tests/test_ppo.py                                  # 快速测试，CPU 上约 30 秒
-SLM_SLOW=1 pytest tests/test_ppo.py                       # 加上完整训练测试
-SLM_SLOW=1 SLM_DEVICE=cuda pytest tests/test_ppo.py       # 指定设备
+python scripts/normalization/01_residual_drift.py
+python scripts/normalization/02_batchnorm.py
+python scripts/normalization/03_layernorm.py
+python scripts/normalization/04_rmsnorm.py
+python scripts/normalization/05_pre_post_norm.py
+python scripts/normalization/06_qk_norm.py
 ```
 
-## Ⅳ �️ 代码导读
+* 核心：[slm/norm.py](slm/norm.py)
+* 聚焦测试：[tests/test_normalization.py](tests/test_normalization.py)
+* Notebook：[notebooks/02_normalization.ipynb](notebooks/02_normalization.ipynb)
 
-| 推导链 | 文章章节 | 代码 |
+# 📌 EP.3 位置编码模块
+
+比较排列等变性、可学习绝对位置、相对 bias、ALiBi、RoPE、PI/NTK scaling 与滑窗 PPL。T5 使用简化的 clipped signed-distance，而非真实对数桶；Shaw 只实现 key-relative 教学项；文章讨论的 YaRN、多维 PE 等扩展未进入核心。
+
+```bash
+python scripts/position/01_permutation_equivariance.py
+python scripts/position/02_relative_bias.py
+python scripts/position/03_alibi.py
+python scripts/position/04_rope.py
+python scripts/position/05_extrapolation.py
+python scripts/position/06_nope.py
+```
+
+* 核心：[slm/position.py](slm/position.py)
+* 聚焦测试：[tests/test_position.py](tests/test_position.py)
+* Notebook：[notebooks/03_position.ipynb](notebooks/03_position.ipynb)
+
+# 📌 EP.4 PPO 模块
+
+PPO 的一行目标函数建立在 MDP、回报、价值、优势、策略梯度、重要性采样和信任域之上。本章保留手写环境、训练器和玩具 RLHF，Notebook 还把短 PPO/RLHF 更新循环直接展开；短运行用于检查数据流，不用于证明收敛。
+
+```bash
+python scripts/ppo/01_mdp.py
+python scripts/ppo/02_value.py
+python scripts/ppo/03_baseline.py
+python scripts/ppo/04_gae.py
+python scripts/ppo/05_importance_sampling.py
+python scripts/ppo/06_ppo_clip.py
+```
+
+## Ⅰ 🛠️ 训练、评估与测试
+
+```bash
+python trainer/train_reinforce.py --device cpu
+python trainer/train_reinforce.py --device cpu --no_baseline
+python trainer/train_ppo.py --device cpu
+python trainer/train_rlhf.py --beta 0.1
+python trainer/train_rlhf.py --beta 0
+
+python eval_cartpole.py --weight ppo_seed0 --greedy
+python scripts/ppo/plot_curves.py
+
+pytest tests/test_ppo.py
+SLM_SLOW=1 SLM_DEVICE=cpu pytest tests/test_ppo.py
+```
+
+训练器把权重与记录写入 `out/`。CartPole 网络很小，逐步环境交互通常适合 CPU；不要把这一点外推为所有 RL 训练的设备结论。
+
+## Ⅱ 代码导读
+
+| 推导链 | 规范核心 | 演示 / 训练 |
 | --- | --- | --- |
-| MDP | 马尔可夫决策过程 | [envs/cartpole.py](envs/cartpole.py)、[utils/rl_utils.py](utils/rl_utils.py) 中的 `discounted_returns` / `rollout`、[01_mdp.py](scripts/ppo/01_mdp.py) |
-| 价值函数 | 价值函数 | [envs/random_walk.py](envs/random_walk.py)、[02_value.py](scripts/ppo/02_value.py) |
-| 策略梯度 | 策略梯度 | [model/model_rl.py](model/model_rl.py) 中的 `Policy`、[03_baseline.py](scripts/ppo/03_baseline.py)、[train_reinforce.py](trainer/train_reinforce.py) |
-| Actor-Critic | Actor-Critic | [utils/rl_utils.py](utils/rl_utils.py) 中的 `compute_gae`、[04_gae.py](scripts/ppo/04_gae.py) |
-| 信任域 | 信任域 | [utils/rl_utils.py](utils/rl_utils.py) 中的 `importance_sampling`、[05_importance_sampling.py](scripts/ppo/05_importance_sampling.py) |
-| PPO | PPO | [model/model_rl.py](model/model_rl.py) 中的 `ActorCritic`、[06_ppo_clip.py](scripts/ppo/06_ppo_clip.py)、[train_ppo.py](trainer/train_ppo.py) |
-| RLHF | PPO 与 RLHF | [model/model_lm.py](model/model_lm.py)、[train_rlhf.py](trainer/train_rlhf.py) |
+| MDP 与随机游走 | [slm/envs.py](slm/envs.py) | [01_mdp.py](scripts/ppo/01_mdp.py)、[02_value.py](scripts/ppo/02_value.py) |
+| 回报、rollout、GAE | [slm/rl.py](slm/rl.py) | [04_gae.py](scripts/ppo/04_gae.py) |
+| Policy 与 Actor-Critic | [slm/rl.py](slm/rl.py) | [train_reinforce.py](trainer/train_reinforce.py) |
+| 重要性采样与 `ppo_loss` | [slm/rl.py](slm/rl.py) | [05_importance_sampling.py](scripts/ppo/05_importance_sampling.py)、[06_ppo_clip.py](scripts/ppo/06_ppo_clip.py)、[train_ppo.py](trainer/train_ppo.py) |
+| TinyLM 与 token log-prob | [slm/lm.py](slm/lm.py) | [train_rlhf.py](trainer/train_rlhf.py) |
+| 聚焦测试 | [tests/test_ppo.py](tests/test_ppo.py) | [04_ppo.ipynb](notebooks/04_ppo.ipynb) |
 
 <details>
 <summary><b>PPO 的核心：裁剪目标</b></summary>
@@ -185,7 +224,7 @@ $$
 
 ![clip-objective](./images/ppo/clip-objective.svg)
 
-优势为正时，概率比超过 $1+\epsilon$ 后梯度为零；优势为负时，概率比低于 $1-\epsilon$ 后梯度为零。灰色区域之外，梯度照常存在，把走错方向的策略拉回来。
+优势为正时，概率比超过 $1+\epsilon$ 后梯度为零；优势为负时，概率比低于 $1-\epsilon$ 后梯度为零。其他方向的梯度仍可修正策略。
 
 </details>
 
@@ -194,13 +233,13 @@ $$
 
 ![rlhf-ppo](./images/ppo/rlhf-ppo.svg)
 
-玩具 RLHF 中，Actor 与 Critic 共享一个 GRU 主干；奖励模型由规则代替（token `3` 的占比）；参考模型是初始策略的冻结拷贝。
+玩具 RLHF 中 Actor 与 Critic 共享 GRU 主干；奖励模型由 token `3` 占比规则代替；参考模型是初始策略的冻结拷贝。
 
 </details>
 
-## Ⅴ � 实验结果
+## Ⅲ 历史实验结果（迁移前）
 
-以下结果均在上文的验证环境中，按「快速开始」的步骤跑出。CartPole 部分使用 `--device cpu`，玩具 RLHF 使用 `--device cuda`。
+以下数字是仓库统一 `slm` 核心与 Notebook 生成器迁移前保存的历史运行，不是本次重构后的当前 CUDA 复跑结果。原记录环境为 Ubuntu 24.04、Python 3.12、PyTorch 2.x、NVIDIA GeForce RTX 4080 SUPER；CartPole 使用 CPU，玩具 RLHF 使用 CUDA。数字原样保留，便于复现时比较。
 
 **CartPole**（3 个随机种子：0 / 1 / 2）
 
@@ -210,41 +249,43 @@ $$
 | REINFORCE + 基线 | 1000 回合（32 万～33 万步） | 484 / 463 / 492 | — | 约 90 s |
 | PPO | 10 万步 | 448 / 500 / 500 | 2.9 万 / 3.7 万 / 4.0 万步 | 约 100 s |
 
-> REINFORCE 统计最后 100 个回合，PPO 统计最后 10 个回合。
-
-训练好的 PPO 策略用 `eval_cartpole.py --greedy` 评估，3 个种子在 20 个回合中全部坚持满 500 步。
+> REINFORCE 统计最后 100 个回合，PPO 统计最后 10 个回合。历史 PPO 权重用 `eval_cartpole.py --greedy` 评估时，3 个种子在 20 个回合中均坚持满 500 步。
 
 ![learning-curves](./images/ppo/learning_curves.png)
 
 **玩具 RLHF**（最后 10 轮平均）
 
-| KL 系数 β | 分数 | 序列 KL | 理论值 |
+| KL 系数 β | 分数 | 序列 KL | 理论均匀 reference 对照 |
 | --- | --- | --- | --- |
 | 0 | 1.000 | 16.75 | 策略坍缩：分数 1，KL → 8 log 8 ≈ 16.64 |
 | 0.1 | 0.332 | 1.11 | 闭式解 π* ∝ π_ref · exp(r / β)：分数 0.333，KL 1.159 |
 
-没有 KL 惩罚时，策略坍缩为只输出 token `3`，这正是奖励欺骗的缩影；加入 KL 惩罚后，PPO 收敛到的策略与 KL 正则最优策略的闭式解基本吻合。
-
-**测试**：快速测试 12 项全部通过（CPU 约 30 s）；`SLM_SLOW=1 SLM_DEVICE=cuda` 下的完整训练测试 16 项全部通过（约 27 分钟）。
+表中的闭式数值是**均匀 reference** 的理论对照；当前玩具训练冻结的是随机初始化网络，并不严格均匀，因此不能把表格当作当前采样过程的精确等式。
 
 # 📌 目录结构
 
 ```text
 small-language-model
-├── envs/              # 手写环境：CartPole、随机游走
-├── model/             # 网络：Policy、ActorCritic、TinyLM
-├── utils/             # 折扣回报、rollout、GAE、重要性采样、随机种子与设备
-├── trainer/           # 训练脚本：REINFORCE、PPO、玩具 RLHF
-├── scripts/
-│   └── ppo/           # PPO 模块：按推导链编号的演示脚本 + 学习曲线绘制
-├── tests/             # 每个模块一个测试文件，每条结论一个测试
-├── eval_cartpole.py   # 评估训练好的 CartPole 策略
-└── images/
+├── slm/                # 8 个规范核心模块：common/envs/lm/moe/norm/position/rl/transformer
+├── scripts/            # 5 章编号演示：transformer/moe/normalization/position/ppo
+├── notebooks/          # 5 本已执行教学 Notebook
+├── docs/               # 中英文静态核心架构文档，可由 GitHub Pages 发布
+├── tools/              # chapters.py 教学清单 + build_notebooks.py 生成器
+├── trainer/            # REINFORCE、PPO、玩具 RLHF 完整训练 CLI
+├── tests/              # 核心、科学断言与 Notebook 基础设施测试
+├── model/ envs/ utils/ # 兼容旧导入的薄 facade；不是教学实现来源
+├── eval_cartpole.py
+├── requirements.txt
+└── requirements-notebooks.txt
 ```
 
 # 📌 参考资料
 
-* [从零理解 PPO](https://momoyeyu.github.io/posts/llm-ppo/)（PPO 模块的配套文章）
+* [Transformer 的数学表示与代码实现](https://momoyeyu.github.io/posts/llm-transformer/)
+* [MoE 技术原理](https://momoyeyu.github.io/posts/llm-moe/)
+* [一文搞懂归一化技术](https://momoyeyu.github.io/posts/llm-normalization/)
+* [位置编码技术的演进](https://momoyeyu.github.io/posts/llm-position-encoding/)
+* [从零理解 PPO](https://momoyeyu.github.io/posts/llm-ppo/)
 * [Reinforcement Learning: An Introduction](http://incompleteideas.net/book/the-book-2nd.html)
 * [OpenAI Spinning Up in Deep RL](https://spinningup.openai.com/)
 * [High-Dimensional Continuous Control Using Generalized Advantage Estimation](https://arxiv.org/abs/1506.02438)

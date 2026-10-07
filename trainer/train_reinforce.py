@@ -8,10 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
 import torch.nn.functional as F
 
-from envs import CartPole
-from model import Policy, mlp
-from utils.common import get_device, save_run, set_seed
-from utils.rl_utils import discounted_returns, rollout
+from slm import CartPole, Policy, discounted_returns, get_device, mlp, rollout, save_run, set_seed
 
 
 def reinforce(

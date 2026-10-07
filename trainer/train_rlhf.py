@@ -10,9 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
 import torch.nn.functional as F
 
-from model import TinyLM, token_log_probs
-from utils.common import get_device, save_run, set_seed
-from utils.rl_utils import compute_gae
+from slm import TinyLM, compute_gae, get_device, save_run, set_seed, token_log_probs
 
 
 def reward_fn(tokens: torch.Tensor, target: int = 3) -> torch.Tensor:
