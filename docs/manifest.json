@@ -1,0 +1,41 @@
+{
+  "title": {"zh": "SLM 核心架构", "en": "SLM Core Architecture"},
+  "sourceRevision": "5a6efc5f5ac53bd10eddfbc3eb5cd176229b5106",
+  "coreEdges": [["moe", "transformer"], ["rl", "envs"]],
+  "languages": {
+    "zh": {
+      "label": "中文",
+      "sections": [
+        {"title": "架构导览", "chapters": [
+          {"id": "overview", "title": "总览：单一实现三条通道", "file": "chapters/zh/01-overview.md"},
+          {"id": "modules", "title": "八个核心模块", "file": "chapters/zh/02-modules.md"}
+        ]},
+        {"title": "运行与教材", "chapters": [
+          {"id": "flows", "title": "运行数据流", "file": "chapters/zh/03-flows.md"},
+          {"id": "notebooks", "title": "Notebook 构建链", "file": "chapters/zh/04-notebooks.md"}
+        ]},
+        {"title": "贡献指南", "chapters": [
+          {"id": "extension", "title": "扩展一个教学能力", "file": "chapters/zh/05-extension.md"},
+          {"id": "boundaries", "title": "边界与发布", "file": "chapters/zh/06-boundaries.md"}
+        ]}
+      ]
+    },
+    "en": {
+      "label": "English",
+      "sections": [
+        {"title": "Architecture", "chapters": [
+          {"id": "overview", "title": "Overview: one core, three lanes", "file": "chapters/en/01-overview.md"},
+          {"id": "modules", "title": "Eight core modules", "file": "chapters/en/02-modules.md"}
+        ]},
+        {"title": "Runtime and teaching", "chapters": [
+          {"id": "flows", "title": "Runtime data flows", "file": "chapters/en/03-flows.md"},
+          {"id": "notebooks", "title": "Notebook build chain", "file": "chapters/en/04-notebooks.md"}
+        ]},
+        {"title": "Contributing", "chapters": [
+          {"id": "extension", "title": "Extend a teaching capability", "file": "chapters/en/05-extension.md"},
+          {"id": "boundaries", "title": "Boundaries and publishing", "file": "chapters/en/06-boundaries.md"}
+        ]}
+      ]
+    }
+  }
+}

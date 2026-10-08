@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "SLM 核心：单一实现，三条消费通道",
+    "locale": "zh-CN",
+    "output": "docs/architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:Momoyeyu/small-language-model.git",
+      "revision": "5a6efc5f5ac53bd10eddfbc3eb5cd176229b5106",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {"id": "reader", "type": "external", "label": "学习者 / 贡献者", "sublabel": "读教程或改核心", "pos": [60, 235], "size": [150, 60]},
+    {"id": "scripts", "type": "backend", "label": "编号演示 scripts/", "sublabel": "5 章最小实验", "pos": [380, 60], "size": [170, 62], "sources": [{"path": "scripts/transformer/01_attention.py", "line": 1, "end_line": 10}]},
+    {"id": "trainer", "type": "backend", "label": "训练器 trainer/", "sublabel": "REINFORCE · PPO · RLHF", "pos": [640, 60], "size": [180, 62], "sources": [{"path": "trainer/train_ppo.py", "line": 11, "end_line": 11}, {"path": "trainer/train_ppo.py", "line": 87, "end_line": 90}]},
+    {"id": "tests", "type": "backend", "label": "pytest tests/", "sublabel": "公式 · 形状 · 梯度断言", "pos": [910, 60], "size": [170, 62], "sources": [{"path": "tests/test_moe.py", "line": 1, "end_line": 12}]},
+    {"id": "facade", "type": "backend", "label": "slm/__init__.py", "sublabel": "公共 API re-export", "pos": [650, 235], "size": [190, 58], "sources": [{"path": "slm/__init__.py", "line": 1, "end_line": 50}]},
+    {"id": "transformer", "type": "backend", "label": "slm/transformer.py", "sublabel": "attention · MHA · FFN", "pos": [370, 360], "size": [180, 56], "sources": [{"path": "slm/transformer.py", "line": 11, "end_line": 55}]},
+    {"id": "norm", "type": "backend", "label": "slm/norm.py", "sublabel": "BN · LN · RMSNorm", "pos": [600, 360], "size": [170, 56], "sources": [{"path": "slm/norm.py", "line": 6, "end_line": 71}]},
+    {"id": "position", "type": "backend", "label": "slm/position.py", "sublabel": "RoPE · ALiBi · PPL", "pos": [830, 360], "size": [170, 56], "sources": [{"path": "slm/position.py", "line": 56, "end_line": 99}]},
+    {"id": "common", "type": "backend", "label": "slm/common.py", "sublabel": "seed · show · device", "pos": [1060, 360], "size": [170, 56], "sources": [{"path": "slm/common.py", "line": 7, "end_line": 30}]},
+    {"id": "moe", "type": "backend", "label": "slm/moe.py", "sublabel": "Router · dispatch", "pos": [370, 480], "size": [180, 56], "sources": [{"path": "slm/moe.py", "line": 7, "end_line": 7}, {"path": "slm/moe.py", "line": 63, "end_line": 95}]},
+    {"id": "envs", "type": "backend", "label": "slm/envs.py", "sublabel": "CartPole · 随机游走", "pos": [560, 480], "size": [170, 56], "sources": [{"path": "slm/envs.py", "line": 5, "end_line": 57}]},
+    {"id": "rl", "type": "backend", "label": "slm/rl.py", "sublabel": "GAE · ppo_loss", "pos": [870, 480], "size": [170, 56], "sources": [{"path": "slm/rl.py", "line": 8, "end_line": 8}, {"path": "slm/rl.py", "line": 56, "end_line": 131}]},
+    {"id": "lm", "type": "backend", "label": "slm/lm.py", "sublabel": "TinyLM GRU", "pos": [1090, 480], "size": [170, 56], "sources": [{"path": "slm/lm.py", "line": 6, "end_line": 35}]},
+    {"id": "manifest", "type": "database", "label": "tools/chapters.py", "sublabel": "显式教学清单", "pos": [1370, 60], "size": [180, 62], "sources": [{"path": "tools/chapters.py", "line": 121, "end_line": 121}]},
+    {"id": "builder", "type": "backend", "label": "tools/build_notebooks.py", "sublabel": "AST 抽取 · nbclient", "pos": [1370, 235], "size": [200, 62], "sources": [{"path": "tools/build_notebooks.py", "line": 92, "end_line": 92}, {"path": "tools/build_notebooks.py", "line": 165, "end_line": 165}, {"path": "tools/build_notebooks.py", "line": 226, "end_line": 252}]},
+    {"id": "notebooks", "type": "database", "label": "notebooks/*.ipynb", "sublabel": "已执行教材", "pos": [1370, 420], "size": [180, 62], "sources": [{"path": "tools/build_notebooks.py", "line": 221, "end_line": 224}]}
+  ],
+  "boundaries": [
+    {"kind": "region", "label": "slm/ 核心 · torch + stdlib", "wraps": ["transformer", "norm", "position", "common", "moe", "envs", "rl", "lm"]}
+  ],
+  "connections": [
+    {"id": "reader-import", "from": "reader", "to": "facade", "label": "from slm import"},
+    {"id": "scripts-import", "from": "scripts", "to": "facade", "label": "from slm import"},
+    {"id": "trainer-import", "from": "trainer", "to": "facade", "label": "from slm import"},
+    {"id": "tests-import", "from": "tests", "to": "facade", "label": "断言核心行为"},
+    {"id": "extract", "from": "builder", "to": "facade", "label": "AST 抽取首教源码"},
+    {"id": "order", "from": "manifest", "to": "builder", "label": "章节顺序"},
+    {"id": "emit", "from": "builder", "to": "notebooks", "label": "生成 + 执行"},
+    {"id": "moe-ffn", "from": "moe", "to": "transformer", "label": "复用 FFN"},
+    {"id": "rl-env", "from": "rl", "to": "envs", "label": "复用 CartPole"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "三条通道", "items": ["scripts / trainer / tests 统一 from slm import；slm 是唯一实现来源。", "Notebook 由 manifest + slm + 脚本拼装，nbclient 记录真实输出。"]},
+    {"dot": "amber", "title": "核心内部仅两条 import 边", "items": ["moe 复用 transformer.FFN 构造 GELU 专家；rl 复用 envs.CartPole。", "其余跨章复用是教学编排，不是核心 import 边；builder 还读取 scripts 作为 demo。"]}
+  ]
+}

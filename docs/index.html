@@ -1,190 +1,38 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="small-language-model 核心架构与扩展指南">
-  <title>SLM 核心架构</title>
-  <link rel="stylesheet" href="./style.css">
-  <script defer src="./site.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="small-language-model 核心架构与扩展指南">
+<title>SLM 核心架构</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="./style.css?v=2">
+<script defer src="./site.js?v=2"></script>
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="#overview">SLM / CORE ARCHITECTURE</a>
-    <span class="topbar-meta">PYTORCH TEACHING CORE · STATIC BLUEPRINT</span>
-    <nav class="topbar-actions" aria-label="全局链接">
-      <a href="https://github.com/Momoyeyu/small-language-model">REPOSITORY</a>
-      <a href="./en.html" lang="en">EN</a>
-      <a href="./index.html" aria-current="page">ZH</a>
+<header>
+  <span id="brand" class="brand">SLM / CORE ARCHITECTURE</span>
+  <nav class="primary-nav" aria-label="文档导航">
+    <a id="guideLink" href="#overview">知识库</a>
+    <a id="diagramLink" href="#diagram">架构图</a>
+  </nav>
+  <div class="header-actions">
+    <span id="revision" class="revision"></span>
+    <a class="repo-link" href="https://github.com/Momoyeyu/small-language-model">GitHub</a>
+    <nav class="language-switch" aria-label="Language / 语言">
+      <a id="zhLink" href="#overview" lang="zh-CN" aria-current="page">中文</a>
+      <a id="enLink" href="#en/overview" lang="en">EN</a>
     </nav>
-  </header>
-
-  <div class="layout">
-    <aside class="sidebar">
-      <p class="sidebar-title">Architecture Guide</p>
-      <nav aria-label="章节导航">
-        <a href="#overview">01 / 总览</a>
-        <a href="#modules">02 / 核心模块</a>
-        <a href="#flows">03 / 运行数据流</a>
-        <a href="#notebooks">04 / Notebook 构建</a>
-        <a href="#extension">05 / 扩展清单</a>
-        <a href="#boundaries">06 / 边界与发布</a>
-      </nav>
-      <p class="sidebar-note">本文面向贡献者。学习者可直接按文章与 Notebook 链路阅读；这里解释单一实现、依赖边界与生成机制。</p>
-    </aside>
-
-    <main>
-      <section class="hero" aria-labelledby="page-title">
-        <p class="eyebrow">CONTRIBUTOR BLUEPRINT</p>
-        <h1 id="page-title">small-language-model 核心架构</h1>
-        <p>八个实现模块构成唯一算法来源；脚本与训练器负责编排；Notebook 把真实源码、实验和讲解编译成可执行教材。本文只描述已经存在的边界，不把教程组合误写成核心依赖。</p>
-        <div class="hero-facts" aria-label="架构摘要">
-          <span class="fact">8 IMPLEMENTATION MODULES</span>
-          <span class="fact">2 INTERNAL IMPORT EDGES</span>
-          <span class="fact">5 GENERATED NOTEBOOKS</span>
-          <span class="fact">TORCH + STDLIB</span>
-        </div>
-      </section>
-
-      <section class="section-panel" id="overview" aria-labelledby="overview-title">
-        <div class="section-head">
-          <span class="section-number">01</span>
-          <div><h2 id="overview-title">总览：单一实现，三条消费路径</h2><p class="section-lead">核心不复制，实验不隐藏，教材可复现。</p></div>
-        </div>
-        <p><code>slm/</code> 是唯一核心实现。外部代码统一使用 <code>from slm import ...</code>；脚本、训练器、测试与 Notebook 共用这一套 API。</p>
-        <div class="diagram" role="group" aria-label="三条架构通道：核心、运行消费者、生成教材">
-          <div class="diagram-header"><span class="diagram-title">THREE-LANE SYSTEM</span><span class="diagram-caption">single source → orchestration → executable teaching</span></div>
-          <div class="lane-grid">
-            <article class="arch-card"><span class="card-label">LANE A / CORE</span><strong>slm/*.py</strong><p>算法原语、形状约束、状态字典与公共 facade。依赖仅 PyTorch 和标准库。</p></article>
-            <article class="arch-card"><span class="card-label">LANE B / RUNTIME</span><strong>scripts + trainer</strong><p>脚本做小型可观察实验；训练器持有长循环、优化器和检查点流程。</p></article>
-            <article class="arch-card"><span class="card-label">LANE C / TEACHING</span><strong>generated notebooks</strong><p>清单把核心源码、demo 和解释组合；nbclient 记录真实输出。</p></article>
-          </div>
-          <div class="flow-chain" aria-hidden="true" style="margin-top:14px">
-            <div class="flow-node"><strong>核心源码</strong><p>唯一实现</p></div><span class="arrow">→</span>
-            <div class="flow-node"><strong>脚本 / 训练器</strong><p>运行编排</p></div><span class="arrow">→</span>
-            <div class="flow-node"><strong>读者 / 测试</strong><p>观察与验证</p></div>
-          </div>
-          <p class="diagram-text"><strong>文字等价说明：</strong>运行消费者直接导入公共 facade；Notebook 生成器同时读取核心、编号脚本和显式教学清单，并不从 import 顺序猜测教学顺序。文章与 Notebook 足以学习实现，本架构页补充贡献边界。</p>
-        </div>
-      </section>
-
-      <section class="section-panel" id="modules" aria-labelledby="modules-title">
-        <div class="section-head">
-          <span class="section-number">02</span>
-          <div><h2 id="modules-title">八个核心模块与真实依赖</h2><p class="section-lead">模块卡记录职责、主 API 和不变量；橙色边表示真实内部 import。</p></div>
-        </div>
-        <div class="module-grid">
-          <article class="module-card" data-module="common" data-depends=""><h3><a href="https://github.com/Momoyeyu/small-language-model/blob/master/slm/common.py">slm/common.py</a><span class="module-name">UTILITY</span></h3><dl><dt>角色</dt><dd>随机种子、统一展示、设备选择和训练产物保存。</dd><dt>主 API</dt><dd><code>set_seed</code>、<code>show</code>、<code>get_device</code>、<code>save_run</code></dd><dt>不变量</dt><dd>路径以仓库根为基准；不承载模型或训练算法。</dd></dl></article>
-          <article class="module-card" data-module="envs" data-depends=""><h3><a href="https://github.com/Momoyeyu/small-language-model/blob/master/slm/envs.py">slm/envs.py</a><span class="module-name">ENVIRONMENT</span></h3><dl><dt>角色</dt><dd>手写 CartPole 与 Sutton–Barto 五状态随机游走。</dd><dt>主 API</dt><dd><code>CartPole</code>、<code>N_STATES</code>、<code>START</code>、<code>walk_step</code></dd><dt>不变量</dt><dd>CartPole 返回 state、reward、terminated、truncated；时间上限按有限时域处理。</dd></dl></article>
-          <article class="module-card" data-module="transformer" data-depends=""><h3><a href="https://github.com/Momoyeyu/small-language-model/blob/master/slm/transformer.py">slm/transformer.py</a><span class="module-name">SEQUENCE MODEL</span></h3><dl><dt>角色</dt><dd>Attention、MHA、FFN、mask、embedding 与完整 Encoder–Decoder。</dd><dt>主 API</dt><dd><code>attention</code>、<code>MHA</code>、<code>FFN</code>、<code>Transformer</code></dd><dt>不变量</dt><dd>默认 ReLU dense FFN、正弦 PE、<code>nn.LayerNorm</code> Post-Norm、权重绑定；不是 decoder-only，也没有 KV cache、MoE/RoPE 开关。</dd></dl></article>
-          <article class="module-card" data-module="moe" data-depends="transformer"><h3><a href="https://github.com/Momoyeyu/small-language-model/blob/master/slm/moe.py">slm/moe.py</a><span class="module-name">SPARSE FFN</span></h3><dl><dt>角色</dt><dd>Top-K Router、负载损失、全局 expert capacity 与 shared/routed experts。</dd><dt>主 API</dt><dd><code>Router</code>、<code>dispatch</code>、<code>MoELayer</code>、<code>DeepSeekMoELayer</code></dd><dt>不变量</dt><dd>复用 <code>transformer.FFN</code> 并改用 GELU；容量为 ceil(T·K/N·factor)，跨 slot 共享且 slot 优先，drop 后不重加权；返回 output 与 aux。</dd></dl></article>
-          <article class="module-card" data-module="norm" data-depends=""><h3><a href="https://github.com/Momoyeyu/small-language-model/blob/master/slm/norm.py">slm/norm.py</a><span class="module-name">NORMALIZATION</span></h3><dl><dt>角色</dt><dd>自定义 BatchNorm、LayerNorm、RMSNorm 与残差位置块。</dd><dt>主 API</dt><dd><code>BatchNorm</code>、<code>LayerNorm</code>、<code>RMSNorm</code>、<code>PreNormBlock</code>、<code>PostNormBlock</code></dd><dt>不变量</dt><dd>Pre/Post 块在本模块内复用 RMSNorm；QK-Norm 只在脚本与 Notebook 组合，不是独立核心开关。</dd></dl></article>
-          <article class="module-card" data-module="position" data-depends=""><h3><a href="https://github.com/Momoyeyu/small-language-model/blob/master/slm/position.py">slm/position.py</a><span class="module-name">POSITION</span></h3><dl><dt>角色</dt><dd>绝对/相对位置、ALiBi、RoPE、长度缩放和滑窗 PPL。</dd><dt>主 API</dt><dd><code>LearnedPE</code>、<code>ShawRelBias</code>、<code>T5RelBias</code>、<code>apply_rope</code>、<code>eval_ppl</code></dd><dt>不变量</dt><dd>相对示例假设 Q/K 同长；T5 是 clipped 简化版，Shaw 仅 key-relative；RoPE split-half 且 D 为偶数；PPL no-grad、恢复训练状态并逐行覆盖除首 token 外所有 target。</dd></dl></article>
-          <article class="module-card" data-module="rl" data-depends="envs"><h3><a href="https://github.com/Momoyeyu/small-language-model/blob/master/slm/rl.py">slm/rl.py</a><span class="module-name">RL PRIMITIVES</span></h3><dl><dt>角色</dt><dd>策略网络、Actor-Critic、回报、rollout、GAE、重要性采样和 PPO loss。</dd><dt>主 API</dt><dd><code>Policy</code>、<code>ActorCritic</code>、<code>compute_gae</code>、<code>ppo_loss</code></dd><dt>不变量</dt><dd>仅复用 <code>envs.CartPole</code> 类型与环境；长训练循环留在 trainer。</dd></dl></article>
-          <article class="module-card" data-module="lm" data-depends=""><h3><a href="https://github.com/Momoyeyu/small-language-model/blob/master/slm/lm.py">slm/lm.py</a><span class="module-name">TOY LM</span></h3><dl><dt>角色</dt><dd>共享 GRU 主干的玩具 actor/value 模型与 token log-prob。</dd><dt>主 API</dt><dd><code>TinyLM</code>、<code>token_log_probs</code></dd><dt>不变量</dt><dd>TinyLM 是 GRU，不使用 Transformer；BOS-shift 对齐不同于普通 causal LM，不能直接交给 <code>eval_ppl</code> 而不加适配。</dd></dl></article>
-        </div>
-
-        <div class="diagram" role="group" aria-label="核心模块内部依赖与教学章节顺序">
-          <div class="diagram-header"><span class="diagram-title">ACTUAL IMPORT GRAPH</span><span class="diagram-caption">only two implementation edges</span></div>
-          <div class="dependency-map"><div class="flow-node"><strong>slm.moe</strong><p>构造 GELU experts</p></div><span class="dependency-edge">→</span><div class="flow-node"><strong>slm.transformer.FFN</strong><p>复用 MLP 实现</p></div></div>
-          <div class="dependency-map" style="margin-top:10px"><div class="flow-node"><strong>slm.rl</strong><p>rollout 类型与环境</p></div><span class="dependency-edge">→</span><div class="flow-node"><strong>slm.envs.CartPole</strong><p>手写环境</p></div></div>
-          <div class="facade-box"><strong class="mono">slm/__init__.py</strong> 向外 re-export 全部公共 API。它是消费者入口，不是模块间互相调用的捷径；核心模块没有环形 import。</div>
-          <div class="tutorial-flow"><strong>教学顺序（虚线概念流，不是 import 图）：</strong> EP.0 Transformer ⇢ EP.1 MoE ⇢ EP.2 Normalization ⇢ EP.3 Position ⇢ EP.4 PPO</div>
-          <div class="legend"><span><i class="legend-key"></i>模块职责</span><span><i class="legend-key import"></i>真实内部 import</span><span><i class="legend-key tutorial"></i>教学编排</span></div>
-          <p class="diagram-text"><strong>文字等价说明：</strong>除 moe→transformer 和 rl→envs 外，其余跨主题关系都由脚本、Notebook 或训练器在运行时组合，不应画成核心 import 边。</p>
-        </div>
-      </section>
-
-      <section class="section-panel" id="flows" aria-labelledby="flows-title">
-        <div class="section-head"><span class="section-number">03</span><div><h2 id="flows-title">运行数据流</h2><p class="section-lead">形状、梯度边界和算法外部责任。</p></div></div>
-
-        <h3>Transformer Encoder–Decoder</h3>
-        <div class="diagram" role="group" aria-label="Transformer 从源和目标 token 到词表 logits 的数据流">
-          <div class="flow-row">
-            <div class="flow-node"><span class="flow-label">INPUT</span><strong>src[B,S], tgt[B,T]</strong><p>padding 信息单独传入</p></div>
-            <div class="flow-node"><span class="flow-label">SHARED FRONT</span><strong>tied embedding + sin PE</strong><p>源与目标共享 embedding 权重</p></div>
-            <div class="flow-node"><span class="flow-label">ENCODER</span><strong>memory[B,S,D]</strong><p>self-attention + dense FFN</p></div>
-            <div class="flow-node"><span class="flow-label">DECODER</span><strong>masked self + cross</strong><p>目标 Q；memory K/V</p></div>
-            <div class="flow-node"><span class="flow-label">OUTPUT</span><strong>logits[B,T,V]</strong><p>分类头与 embedding tied</p></div>
-          </div>
-          <p class="diagram-text"><strong>文字等价说明：</strong>源和目标先经过共享 embedding 与正弦位置；Encoder 产生 memory；Decoder 依次做 causal self-attention、cross-attention 和 FFN；训练脚本在模型外完成 next-target shift，并把 padding labels 设为 ignore index。</p>
-        </div>
-
-        <h3>MoE dispatch</h3>
-        <div class="diagram" role="group" aria-label="MoE 路由、容量与专家输出数据流">
-          <div class="flow-row">
-            <div class="flow-node"><strong>x[T,D]</strong><p>扁平 token batch</p></div>
-            <div class="flow-node"><strong>router[T,N]</strong><p>softmax probabilities</p></div>
-            <div class="flow-node"><strong>topk[T,K]</strong><p>indices + normalized selected weights</p></div>
-            <div class="flow-node"><strong>global budget</strong><p>per expert, shared across slots</p></div>
-            <div class="flow-node"><strong>output + aux</strong><p>weighted routed result；可加 shared experts</p></div>
-          </div>
-          <p class="diagram-text"><strong>文字等价说明：</strong>dispatch 按 slot→expert→token 顺序消耗全局 expert budget，drop 后不重新归一化。主梯度只流过被选中的可微 gate 与专家；离散 top-k index 不可微，辅助损失为路由概率提供另一条训练路径；固定 dispatch mask 下，未被选择专家对应的概率梯度可以为零。</p>
-        </div>
-
-        <h3>PPO 与玩具 RLHF</h3>
-        <div class="diagram" role="group" aria-label="PPO 与 RLHF 的训练数据流">
-          <div class="flow-chain"><div class="flow-node"><strong>CartPole env</strong><p>state / reward / done</p></div><span class="arrow">→</span><div class="flow-node"><strong>detached rollout</strong><p>obs, action, old log-prob, value</p></div><span class="arrow">→</span><div class="flow-node"><strong>GAE → minibatch</strong><p>ppo_loss → optimizer</p></div></div>
-          <div class="flow-chain" style="margin-top:12px"><div class="flow-node"><strong>policy + reference</strong><p>sample token sequences</p></div><span class="arrow">→</span><div class="flow-node"><strong>score + sampled KL</strong><p>构造逐 token rewards</p></div><span class="arrow">→</span><div class="flow-node"><strong>GAE → PPO</strong><p>更新 GRU policy/value</p></div></div>
-          <p class="diagram-text"><strong>文字等价说明：</strong>PPO 先无梯度收集固定旧策略数据，再计算 GAE 并多轮 minibatch 更新。玩具 RLHF 额外冻结 reference，用规则 score 与 sampled log-ratio 形成 rewards；这里没有隐藏 benchmark 或收敛保证。</p>
-        </div>
-      </section>
-
-      <section class="section-panel" id="notebooks" aria-labelledby="notebooks-title">
-        <div class="section-head"><span class="section-number">04</span><div><h2 id="notebooks-title">Notebook 构建链</h2><p class="section-lead">显式教学清单 + 精确源码 span + 真实执行输出。</p></div></div>
-        <div class="diagram" role="group" aria-label="从教学清单、核心和 demo 生成并执行 Notebook">
-          <div class="flow-chain"><div class="flow-node"><strong>tools/chapters.py</strong><p>markdown / source / code / demo tuples</p></div><span class="arrow">+</span><div class="flow-node"><strong>slm + scripts</strong><p>AST span 与保留格式的 demo</p></div><span class="arrow">→</span><div class="flow-node"><strong>build → nbclient</strong><p>ipynb source + real outputs</p></div></div>
-          <p class="diagram-text"><strong>文字等价说明：</strong>生成器按清单顺序抽取函数、类、装饰器和常量；demo 只移除 bootstrap 与会覆盖本地教学定义的 import。源码单元在当前解释器的隔离 kernel 内直接执行，不用 runpy。执行失败不会覆盖已成功记录的 Notebook。</p>
-        </div>
-        <div class="notebook-grid">
-          <a class="notebook-card" href="https://github.com/Momoyeyu/small-language-model/blob/master/notebooks/00_transformer.ipynb"><span class="card-label">EP.0</span><strong>Transformer</strong><p>首次展开 FFN 等基础实现</p></a>
-          <a class="notebook-card" href="https://github.com/Momoyeyu/small-language-model/blob/master/notebooks/01_moe.ipynb"><span class="card-label">EP.1</span><strong>MoE</strong><p>导入已教学 FFN</p></a>
-          <a class="notebook-card" href="https://github.com/Momoyeyu/small-language-model/blob/master/notebooks/02_normalization.ipynb"><span class="card-label">EP.2</span><strong>Normalization</strong><p>从零展开 norm 实现</p></a>
-          <a class="notebook-card" href="https://github.com/Momoyeyu/small-language-model/blob/master/notebooks/03_position.ipynb"><span class="card-label">EP.3</span><strong>Position</strong><p>复用 attention 与 RMSNorm</p></a>
-          <a class="notebook-card" href="https://github.com/Momoyeyu/small-language-model/blob/master/notebooks/04_ppo.ipynb"><span class="card-label">EP.4</span><strong>PPO</strong><p>字面训练循环保留在清单</p></a>
-        </div>
-        <p><strong>首次出现规则：</strong><code>FFN</code> 在 EP.0 以真实源码单元展开；EP.1 只导入它并展示 MoE 如何复用。支持性的训练和绘图循环直接写在 manifest，不为方便生成而塞进核心。</p>
-        <p>检查器逐单元比较类型和源码，并核对 Notebook 中保存的全核心 SHA。即使本章只 import 一个之前教过的符号，核心变化也会使全部 Notebook 过期。</p>
-        <pre><code>uv pip install -r requirements-notebooks.txt
-make notebooks
-make check-notebooks</code></pre>
-      </section>
-
-      <section class="section-panel" id="extension" aria-labelledby="extension-title">
-        <div class="section-head"><span class="section-number">05</span><div><h2 id="extension-title">扩展一个教学能力</h2><p class="section-lead">先明确不变量，再让 demo、测试和教材同步。</p></div></div>
-        <ol class="checklist">
-          <li><strong>选择核心归属。</strong>把可复用数学原语放入最接近的 <code>slm</code> 模块；不要为了 Notebook 顺序制造跨模块 import。</li>
-          <li><strong>公开 API。</strong>在 <code>slm/__init__.py</code> 显式 re-export；消费者继续使用 <code>from slm import ...</code>。</li>
-          <li><strong>写聚焦测试。</strong>优先验证公式、形状、梯度、容量或状态恢复，不用脆弱的单次性能数字。</li>
-          <li><strong>写小型 demo。</strong>编号脚本使用 <code>show(name, value)</code> 暴露关键观察，长训练循环留给 trainer。</li>
-          <li><strong>安排首次教学。</strong>在 <code>tools/chapters.py</code> 按依赖顺序加入 source；后续章节导入，不重复实现。</li>
-          <li><strong>重建与验证。</strong>安装 Notebook extras，执行全部 Notebook，跑 freshness 检查，再运行聚焦测试；慢收敛测试按需启用。</li>
-        </ol>
-        <h3>最小公共 API 使用</h3>
-        <pre><code>from slm import FFN
-import torch
-
-layer = FFN(16, 32)
-y = layer(torch.randn(2, 8, 16))</code></pre>
-        <p>这段代码只构造逐 token FFN 并验证可复用调用面；优化器、数据、loss 与训练循环由消费者决定。</p>
-      </section>
-
-      <section class="section-panel" id="boundaries" aria-labelledby="boundaries-title">
-        <div class="section-head"><span class="section-number">06</span><div><h2 id="boundaries-title">边界与静态发布</h2><p class="section-lead">教学实现的边界是架构的一部分。</p></div></div>
-        <div class="boundary-grid">
-          <div class="callout"><strong>模型边界</strong><ul><li>默认 Transformer 不会因新增 MoE、RoPE 或 QK-Norm 自动升级。</li><li>它是 Encoder–Decoder，不是 decoder-only production LLM。</li><li>没有 KV cache、并行通信或 fused kernels。</li></ul></div>
-          <div class="callout"><strong>实验边界</strong><ul><li>CartPole cutoff 使用有限时域终止语义。</li><li>T5、Shaw、ALiBi 非 2 次幂等细节按文档所述简化。</li><li>PI/NTK 数值展示不等于测得长上下文提升。</li></ul></div>
-        </div>
-        <p><code>eval_ppl</code> 对 batch 每行除首 token 外的 next-token target 恰好计分一次，要求 <code>stride &lt; ctx</code>，并恢复原始 <code>model.training</code>。TinyLM 使用不同 BOS 对齐，未经 adapter 不应直接传入。</p>
-        <h3>文档运行与 GitHub Pages</h3>
-        <p>本目录是纯静态 HTML/CSS/可选本地 JS：无构建步骤、无 CDN、无外部字体、无秘密信息。JavaScript 只增强侧栏 active 状态，禁用后所有内容与 anchor 仍可使用。</p>
-        <pre><code>make docs
-make check-docs</code></pre>
-        <p>本地服务绑定 <code>127.0.0.1:8000</code>。仓库维护者可在 GitHub Pages 中选择 <code>master</code> 分支的 <code>/docs</code> 目录；<code>.nojekyll</code> 保持静态资源原样。发布前应确认公开目录不含凭据。</p>
-      </section>
-
-      <footer>SLM core architecture · static contributor documentation · <a href="./en.html">English version</a></footer>
-    </main>
   </div>
+</header>
+<div class="shell">
+  <aside id="sidebar" aria-label="章节导航"></aside>
+  <main id="content" aria-live="polite"></main>
+</div>
+<noscript>
+  <main style="padding:24px">
+    <p>本站章节由浏览器内 Markdown 渲染器装配；禁用 JavaScript 时请直接阅读 <code>chapters/zh/</code> 或 <code>chapters/en/</code> 下的 Markdown 源文件，架构图见 <a href="./architecture.html">architecture.html</a>。</p>
+  </main>
+</noscript>
 </body>
 </html>
