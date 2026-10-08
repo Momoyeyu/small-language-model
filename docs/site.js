@@ -71,6 +71,27 @@
   };
 
   let manifest;
+  let diagramView;
+  let renderToken = 0;
+  const chapterView = document.createElement("div");
+  const chapterCache = new Map();
+  els.content.append(chapterView);
+
+  function loadChapter(path) {
+    if (!chapterCache.has(path)) {
+      const request = fetch(path)
+        .then((response) => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.text();
+        })
+        .then(markdown);
+      chapterCache.set(path, request);
+      request.catch(() => {
+        if (chapterCache.get(path) === request) chapterCache.delete(path);
+      });
+    }
+    return chapterCache.get(path);
+  }
 
   const route = () => {
     const parts = decodeURIComponent(location.hash.slice(1)).split("/").filter(Boolean);
@@ -98,6 +119,7 @@
   }
 
   async function render() {
+    const token = ++renderToken;
     const { lang, id } = route();
     const copy = t();
     const chapters = manifest.languages[lang].sections.flatMap((s) => s.chapters);
@@ -119,20 +141,36 @@
     els.diagram.classList.toggle("active", id === "diagram");
     buildSidebar();
     if (id === "diagram") {
-      els.content.innerHTML = `<div class="hero"><h1>${copy.diagramTitle}</h1><p>${copy.diagramNote}</p><p><a class="diagram-link" href="architecture.html" target="_blank" rel="noopener">${copy.diagramLink}</a></p><iframe class="diagram" title="SLM architecture diagram" src="architecture.html"></iframe></div>`;
-      window.scrollTo({ top: 0 });
-      return;
-    }
-    if (!chapter) {
-      els.content.innerHTML = `<p class="error">${copy.notFound}</p>`;
-      return;
-    }
-    try {
-      const response = await fetch(chapter.file);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      els.content.innerHTML = `<article class="prose"><div class="crumb">SLM / ${escapeHtml(chapter.title)}</div>${markdown(await response.text())}</article>`;
-    } catch (err) {
-      els.content.innerHTML = `<p class="error">${copy.loadFail}：${escapeHtml(err.message)}。${copy.hint}</p>`;
+      if (!diagramView) {
+        diagramView = document.createElement("div");
+        diagramView.className = "hero";
+        diagramView.innerHTML = `<h1></h1><p></p><p><a class="diagram-link" href="architecture.html" target="_blank" rel="noopener"></a></p><iframe class="diagram" title="SLM architecture diagram" src="architecture.html"></iframe>`;
+        els.content.append(diagramView);
+      }
+      if (!diagramView.querySelector("h1")) diagramView.prepend(document.createElement("h1"));
+      diagramView.querySelector("h1").textContent = copy.diagramTitle;
+      diagramView.querySelector("p").textContent = copy.diagramNote;
+      diagramView.querySelector("a").textContent = copy.diagramLink;
+      chapterView.replaceChildren();
+      chapterView.hidden = true;
+      diagramView.hidden = false;
+    } else {
+      if (diagramView) {
+        diagramView.querySelector("h1")?.remove();
+        diagramView.hidden = true;
+      }
+      chapterView.hidden = false;
+      if (!chapter) chapterView.innerHTML = `<p class="error">${copy.notFound}</p>`;
+      else {
+        try {
+          const html = await loadChapter(chapter.file);
+          if (token !== renderToken) return;
+          chapterView.innerHTML = `<article class="prose"><div class="crumb">SLM / ${escapeHtml(chapter.title)}</div>${html}</article>`;
+        } catch (err) {
+          if (token !== renderToken) return;
+          chapterView.innerHTML = `<p class="error">${copy.loadFail}：${escapeHtml(err.message)}。${copy.hint}</p>`;
+        }
+      }
     }
     window.scrollTo({ top: 0 });
   }
@@ -144,6 +182,11 @@
     els.revision.textContent = `SOURCE · ${manifest.sourceRevision.slice(0, 8)}`;
     window.addEventListener("hashchange", render);
     await render();
+    const languages = [route().lang, route().lang === "zh" ? "en" : "zh"];
+    const chapters = languages.map((lang) => manifest.languages[lang].sections.flatMap((section) => section.chapters));
+    for (let index = 0; index < chapters[0].length; index++) {
+      for (const list of chapters) loadChapter(list[index].file);
+    }
   }
 
   load().catch((err) => {
